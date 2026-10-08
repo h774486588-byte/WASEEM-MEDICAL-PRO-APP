@@ -227,13 +227,51 @@ class PatientDetails extends StatelessWidget{
 }
 class Info extends StatelessWidget{final String a,b;const Info(this.a,this.b,{super.key});@override Widget build(BuildContext c)=>Card(child:ListTile(title:Text(a),subtitle:Text(b.isEmpty?'—':b)));}
 
-class AppointmentsPage extends StatefulWidget{final VoidCallback changed;const AppointmentsPage({super.key,required this.changed});@override State<AppointmentsPage> createState()=>_AppointmentsPageState();}
+class AppointmentsPage extends StatefulWidget{
+  final VoidCallback changed;
+  const AppointmentsPage({super.key,required this.changed});
+  @override State<AppointmentsPage> createState()=>_AppointmentsPageState();
+}
 class _AppointmentsPageState extends State<AppointmentsPage>{
-  Future<void> add()async{final ps=await LocalStore.patients();if(ps.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أضف مريضاً أولاً')));return;}final r=await Navigator.push<Appointment>(context,MaterialPageRoute(builder:(_)=>AppointmentForm(patients:ps)));if(r==null)return;final l=await LocalStore.appointments();l.add(r);await LocalStore.saveAppointments(l);setState((){});widget.changed();}
+  DateTime selected=DateTime.now();
+  Future<void> add()async{
+    final ps=await LocalStore.patients();
+    if(ps.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أضف مريضاً أولاً')));return;}
+    final r=await Navigator.push<Appointment>(context,MaterialPageRoute(builder:(_)=>AppointmentForm(patients:ps)));
+    if(r==null)return;
+    final l=await LocalStore.appointments();l.add(r);await LocalStore.saveAppointments(l);
+    final ns=await LocalStore.notifications();
+    ns.insert(0,AppNotification(id:idNow(),title:'موعد جديد',body:'تم حجز موعد للمريض في '+r.date+' الساعة '+r.time,channel:'النظام',status:'جاهز',date:dateOnly(DateTime.now())));
+    await LocalStore.saveNotifications(ns);
+    setState((){});widget.changed();
+  }
+  Future<void> pickDate()async{
+    final d=await showDatePicker(context:context,initialDate:selected,firstDate:DateTime(2020),lastDate:DateTime(2100),locale:null);
+    if(d!=null)setState(()=>selected=d);
+  }
   @override Widget build(BuildContext c)=>FutureBuilder(future:Future.wait([LocalStore.appointments(),LocalStore.patients()]),builder:(c,s){
-    if(!s.hasData)return const Center(child:CircularProgressIndicator());final a=s.data![0] as List<Appointment>,ps=s.data![1] as List<Patient>;final today=dateOnly(DateTime.now());final list=a.where((x)=>x.date==today).toList();
+    if(!s.hasData)return const Center(child:CircularProgressIndicator());
+    final a=s.data![0] as List<Appointment>,ps=s.data![1] as List<Patient>;
+    final key=dateOnly(selected);
+    final list=a.where((x)=>x.date==key).toList()..sort((x,y)=>x.time.compareTo(y.time));
     String pname(String id){for(final p in ps){if(p.id==id)return p.name;}return 'غير معروف';}
-    return ListView(padding:const EdgeInsets.all(16),children:[Row(children:[const Expanded(child:Text('مواعيد اليوم',style:TextStyle(fontSize:24,fontWeight:FontWeight.bold))),FilledButton.icon(onPressed:add,icon:const Icon(Icons.add),label:const Text('موعد جديد'))]),const SizedBox(height:12),if(list.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(28),child:Center(child:Text('لا توجد مواعيد اليوم')))),...list.map((x)=>Card(child:ListTile(leading:const Icon(Icons.event_available),title:Text(pname(x.patientId)),subtitle:Text(x.time+' • '+x.doctor),trailing:Text(x.status))))]);
+    return ListView(padding:EdgeInsets.zero,children:[
+      Container(padding:const EdgeInsets.fromLTRB(16,18,16,20),decoration:const BoxDecoration(color:Color(0xFF0869B9),borderRadius:BorderRadius.only(bottomLeft:Radius.circular(26),bottomRight:Radius.circular(26))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Row(children:[const Expanded(child:Text('المواعيد',style:TextStyle(color:Colors.white,fontSize:25,fontWeight:FontWeight.bold))),IconButton(onPressed:add,style:IconButton.styleFrom(backgroundColor:Colors.white,foregroundColor:Color(0xFF0869B9)),icon:const Icon(Icons.add_rounded))]),
+        const SizedBox(height:4),Text(list.length.toString()+' موعد في اليوم المحدد',style:const TextStyle(color:Colors.white70)),
+        const SizedBox(height:14),
+        InkWell(onTap:pickDate,borderRadius:BorderRadius.circular(14),child:Container(padding:const EdgeInsets.symmetric(horizontal:14,vertical:12),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(14)),child:Row(children:[const Icon(Icons.calendar_month_rounded,color:Color(0xFF0869B9)),const SizedBox(width:10),Expanded(child:Text(key,style:const TextStyle(fontWeight:FontWeight.bold,color:Color(0xFF12395C)))),const Icon(Icons.keyboard_arrow_down_rounded,color:Color(0xFF0869B9))])))
+      ])),
+      Padding(padding:const EdgeInsets.fromLTRB(16,18,16,8),child:Text(selected.year==DateTime.now().year&&selected.month==DateTime.now().month&&selected.day==DateTime.now().day?'مواعيد اليوم':'المواعيد المحددة',style:const TextStyle(fontSize:20,fontWeight:FontWeight.bold,color:Color(0xFF12395C)))),
+      Padding(padding:const EdgeInsets.symmetric(horizontal:16),child:Column(children:[
+        if(list.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(28),child:Center(child:Text('لا توجد مواعيد في هذا اليوم')))),
+        ...list.map((x)=>Card(margin:const EdgeInsets.only(bottom:10),child:Padding(padding:const EdgeInsets.all(13),child:Row(children:[
+          Container(width:68,padding:const EdgeInsets.symmetric(vertical:10),decoration:BoxDecoration(color:const Color(0xFFEAF4FF),borderRadius:BorderRadius.circular(13)),child:Text(x.time,textAlign:TextAlign.center,style:const TextStyle(color:Color(0xFF0869B9),fontWeight:FontWeight.bold))),
+          const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(pname(x.patientId),style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16)),const SizedBox(height:4),Text(x.doctor.isEmpty?'بدون أخصائي محدد':x.doctor,style:const TextStyle(color:Colors.black54,fontSize:12)),if(x.notes.isNotEmpty)Text(x.notes,style:const TextStyle(color:Colors.black45,fontSize:11))])),
+          Container(padding:const EdgeInsets.symmetric(horizontal:9,vertical:6),decoration:BoxDecoration(color:x.status=='مؤكد'?const Color(0xFFE8F8EF):const Color(0xFFFFF3DF),borderRadius:BorderRadius.circular(10)),child:Text(x.status))
+        ])))
+      ]))
+    ]);
   });
 }
 class AppointmentForm extends StatefulWidget{
@@ -242,18 +280,20 @@ class AppointmentForm extends StatefulWidget{
   @override State<AppointmentForm> createState()=>_AppointmentFormState();
 }
 class _AppointmentFormState extends State<AppointmentForm>{
-  late String pid;
-  final time=TextEditingController(text:'09:00'),doctor=TextEditingController();
+  late String pid,status='مؤكد';
+  DateTime date=DateTime.now();
+  final time=TextEditingController(text:'09:00'),doctor=TextEditingController(),notes=TextEditingController();
   @override void initState(){super.initState();pid=widget.patients.first.id;}
-  @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(
-    appBar:AppBar(title:const Text('موعد جديد')),
-    body:ListView(padding:const EdgeInsets.all(16),children:[
-      DropdownButtonFormField(value:pid,decoration:const InputDecoration(labelText:'المريض'),items:widget.patients.map((p)=>DropdownMenuItem(value:p.id,child:Text(p.fileNo+' - '+p.name))).toList(),onChanged:(v)=>setState(()=>pid=v!)),
-      const SizedBox(height:12),TextField(controller:time,decoration:const InputDecoration(labelText:'الوقت')),
-      const SizedBox(height:12),TextField(controller:doctor,decoration:const InputDecoration(labelText:'الطبيب / الأخصائي')),
-      const SizedBox(height:20),FilledButton(onPressed:()=>Navigator.pop(c,Appointment(id:idNow(),patientId:pid,date:dateOnly(DateTime.now()),time:time.text,doctor:doctor.text)),child:const Text('حفظ الموعد'))
-    ])
-  ));
+  Future<void> pick()async{final d=await showDatePicker(context:context,initialDate:date,firstDate:DateTime(2020),lastDate:DateTime(2100));if(d!=null)setState(()=>date=d);}
+  @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:const Text('موعد جديد')),body:ListView(padding:const EdgeInsets.all(16),children:[
+    DropdownButtonFormField(value:pid,decoration:const InputDecoration(labelText:'المريض'),items:widget.patients.map((p)=>DropdownMenuItem(value:p.id,child:Text(p.fileNo+' - '+p.name))).toList(),onChanged:(v)=>setState(()=>pid=v!)),
+    const SizedBox(height:12),InkWell(onTap:pick,child:InputDecorator(decoration:const InputDecoration(labelText:'تاريخ الموعد',prefixIcon:Icon(Icons.calendar_month)),child:Text(dateOnly(date)))),
+    const SizedBox(height:12),TextField(controller:time,keyboardType:TextInputType.datetime,decoration:const InputDecoration(labelText:'الوقت',prefixIcon:Icon(Icons.access_time))),
+    const SizedBox(height:12),TextField(controller:doctor,decoration:const InputDecoration(labelText:'الطبيب / الأخصائي',prefixIcon:Icon(Icons.medical_services_outlined))),
+    const SizedBox(height:12),DropdownButtonFormField(value:status,decoration:const InputDecoration(labelText:'الحالة'),items:['مؤكد','انتظار','تم الحضور','ملغي'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setState(()=>status=v!)),
+    const SizedBox(height:12),TextField(controller:notes,maxLines:3,decoration:const InputDecoration(labelText:'ملاحظات')),
+    const SizedBox(height:20),SizedBox(height:50,child:FilledButton.icon(onPressed:()=>Navigator.pop(c,Appointment(id:idNow(),patientId:pid,date:dateOnly(date),time:time.text.trim(),doctor:doctor.text.trim(),status:status,notes:notes.text.trim())),icon:const Icon(Icons.save),label:const Text('حفظ الموعد')))
+  ]));
 }
 class PackagesPage extends StatefulWidget{final VoidCallback changed;const PackagesPage({super.key,required this.changed});@override State<PackagesPage> createState()=>_PackagesPageState();}
 class _PackagesPageState extends State<PackagesPage>{
