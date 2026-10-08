@@ -1,5 +1,6 @@
 name: Build Android APK
 # Release verification build
+# Backup service integration verification
 
 on:
   workflow_dispatch:
