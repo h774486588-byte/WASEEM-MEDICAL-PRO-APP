@@ -21,3 +21,13 @@
 4. عند وصول الجلسات إلى 0 ينشأ تنبيه انتهاء الباقة.
 5. الفاتورة المدفوعة بالكامل تتحول إلى paid، وإلا partial أو unpaid.
 6. كل تعديل حساس يسجل في audit_logs.
+
+
+## PRO additions
+- Auth: login/logout, token rotation, password reset, role/permission middleware.
+- Settings: branch settings, services, users, message templates.
+- Finance: invoice items, payments, expenses, cash summary.
+- Reports: patients, appointments, sessions, revenue, expenses, outstanding balances.
+- Notifications: queue, retries, provider message IDs, delivery status, WhatsApp Business/SMS adapters.
+- Backup: scheduled database backup metadata and restore workflow.
+- Audit: immutable audit events for authentication, patient edits, finance and permissions.
