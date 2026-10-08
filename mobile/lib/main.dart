@@ -295,67 +295,51 @@ class _AppointmentFormState extends State<AppointmentForm>{
     const SizedBox(height:20),SizedBox(height:50,child:FilledButton.icon(onPressed:()=>Navigator.pop(c,Appointment(id:idNow(),patientId:pid,date:dateOnly(date),time:time.text.trim(),doctor:doctor.text.trim(),status:status,notes:notes.text.trim())),icon:const Icon(Icons.save),label:const Text('حفظ الموعد')))
   ]));
 }
-class PackagesPage extends StatefulWidget{final VoidCallback changed;const PackagesPage({super.key,required this.changed});@override State<PackagesPage> createState()=>_PackagesPageState();}
+class PackagesPage extends StatefulWidget{
+  final VoidCallback changed;
+  const PackagesPage({super.key,required this.changed});
+  @override State<PackagesPage> createState()=>_PackagesPageState();
+}
 class _PackagesPageState extends State<PackagesPage>{
   Future<void> add()async{
     final ps=await LocalStore.patients();
     if(ps.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أضف مريضاً أولاً')));return;}
     final r=await Navigator.push<PackageRecord>(context,MaterialPageRoute(builder:(_)=>PackageForm(patients:ps)));
-    if(r==null)return;
-    final l=await LocalStore.packages();l.add(r);await LocalStore.savePackages(l);setState((){});widget.changed();
+    if(r==null)return; final l=await LocalStore.packages(); l.add(r); await LocalStore.savePackages(l); setState((){}); widget.changed();
   }
-
   Future<void> registerSession(PackageRecord item)async{
-    if(item.remaining<=0){
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('لا توجد جلسات متبقية في هذه الباقة')));
-      return;
-    }
-    final list=await LocalStore.packages();
-    final index=list.indexWhere((x)=>x.id==item.id);
-    if(index<0)return;
+    if(item.remaining<=0){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('انتهت جلسات هذه الباقة')));return;}
+    final list=await LocalStore.packages(); final i=list.indexWhere((x)=>x.id==item.id); if(i<0)return;
     final left=item.remaining-1;
-    list[index]=PackageRecord(
-      id:item.id,patientId:item.patientId,name:item.name,price:item.price,paid:item.paid,
-      sessions:item.sessions,remaining:left,startDate:item.startDate,endDate:item.endDate);
+    list[i]=PackageRecord(id:item.id,patientId:item.patientId,name:item.name,price:item.price,paid:item.paid,sessions:item.sessions,remaining:left,startDate:item.startDate,endDate:item.endDate);
     await LocalStore.savePackages(list);
-
-    final notes=await LocalStore.notifications();
-    if(left<=2){
-      notes.insert(0,AppNotification(
-        id:idNow(),
-        title:left==0?'انتهاء الباقة':'تنبيه قرب انتهاء الباقة',
-        body:left==0?'انتهت جميع جلسات باقة '+item.name:'تبقى '+left.toString()+' جلسة من باقة '+item.name,
-        channel:'النظام',status:'جاهز',date:dateOnly(DateTime.now())));
-      await LocalStore.saveNotifications(notes);
-    }
-    setState((){});widget.changed();
-    if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تم تسجيل الجلسة. المتبقي: '+left.toString())));
+    final ns=await LocalStore.notifications();
+    if(left<=2){ns.insert(0,AppNotification(id:idNow(),title:left==0?'انتهاء الباقة':'تنبيه قرب انتهاء الباقة',body:left==0?'انتهت جميع جلسات باقة '+item.name:'تبقى '+left.toString()+' جلسة من باقة '+item.name,channel:'النظام',status:'جاهز',date:dateOnly(DateTime.now())));await LocalStore.saveNotifications(ns);}
+    setState((){}); widget.changed();
+    if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تم تسجيل الجلسة • المتبقي '+left.toString())));
   }
-
-  @override Widget build(BuildContext c)=>FutureBuilder(
-    future:Future.wait([LocalStore.packages(),LocalStore.patients()]),
-    builder:(c,s){
-      if(!s.hasData)return const Center(child:CircularProgressIndicator());
-      final g=s.data![0] as List<PackageRecord>,ps=s.data![1] as List<Patient>;
-      String pname(String id){for(final p in ps){if(p.id==id)return p.name;}return 'غير معروف';}
-      return ListView(padding:const EdgeInsets.all(16),children:[
-        Row(children:[
-          const Expanded(child:Text('الباقات والجلسات',style:TextStyle(fontSize:24,fontWeight:FontWeight.bold))),
-          FilledButton.icon(onPressed:add,icon:const Icon(Icons.add),label:const Text('باقة جديدة'))
-        ]),
-        const SizedBox(height:12),
-        if(g.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(28),child:Center(child:Text('لا توجد باقات')))),
-        ...g.map((x)=>Card(child:ListTile(
-          title:Text(x.name),
-          subtitle:Text(pname(x.patientId)+' • '+x.remaining.toString()+' جلسة متبقية'),
-          trailing:FilledButton.tonalIcon(
-            onPressed:()=>registerSession(x),
-            icon:const Icon(Icons.medical_services_outlined),
-            label:const Text('تسجيل جلسة'),
-          ),
-        )))
-      ]);
-    });
+  @override Widget build(BuildContext c)=>FutureBuilder(future:Future.wait([LocalStore.packages(),LocalStore.patients()]),builder:(c,s){
+    if(!s.hasData)return const Center(child:CircularProgressIndicator());
+    final g=s.data![0] as List<PackageRecord>,ps=s.data![1] as List<Patient>;
+    String pname(String id){for(final p in ps){if(p.id==id)return p.name;}return 'غير معروف';}
+    return ListView(padding:EdgeInsets.zero,children:[
+      Container(padding:const EdgeInsets.fromLTRB(16,18,16,20),decoration:const BoxDecoration(color:Color(0xFF0869B9),borderRadius:BorderRadius.only(bottomLeft:Radius.circular(26),bottomRight:Radius.circular(26))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Row(children:[const Expanded(child:Text('الباقات والجلسات',style:TextStyle(color:Colors.white,fontSize:25,fontWeight:FontWeight.bold))),IconButton(onPressed:add,style:IconButton.styleFrom(backgroundColor:Colors.white,foregroundColor:Color(0xFF0869B9)),icon:const Icon(Icons.add_rounded))]),
+        const SizedBox(height:4),Text(g.length.toString()+' باقة مسجلة',style:const TextStyle(color:Colors.white70))
+      ])),
+      Padding(padding:const EdgeInsets.fromLTRB(16,18,16,8),child:const Text('متابعة الجلسات',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold,color:Color(0xFF12395C)))),
+      Padding(padding:const EdgeInsets.symmetric(horizontal:16),child:Column(children:[
+        if(g.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(28),child:Center(child:Text('لا توجد باقات مسجلة')))),
+        ...g.map((x)=>Card(margin:const EdgeInsets.only(bottom:10),child:Padding(padding:const EdgeInsets.all(14),child:Column(children:[
+          Row(children:[Container(width:46,height:46,decoration:BoxDecoration(color:const Color(0xFFEAF4FF),borderRadius:BorderRadius.circular(13)),child:const Icon(Icons.layers_rounded,color:Color(0xFF0869B9))),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(x.name,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16)),const SizedBox(height:3),Text(pname(x.patientId),style:const TextStyle(color:Colors.black54,fontSize:12))])),Text(x.remaining.toString(),style:const TextStyle(fontSize:24,fontWeight:FontWeight.bold,color:Color(0xFF0869B9)))]),
+          const SizedBox(height:12),
+          ClipRRect(borderRadius:BorderRadius.circular(8),child:LinearProgressIndicator(value:x.sessions<=0?0:x.remaining/x.sessions,minHeight:8,backgroundColor:const Color(0xFFE8EEF5))),
+          const SizedBox(height:8),
+          Row(children:[Expanded(child:Text('المتبقي '+x.remaining.toString()+' من '+x.sessions.toString()+' جلسة',style:const TextStyle(fontSize:12,color:Colors.black54))),FilledButton.tonalIcon(onPressed:()=>registerSession(x),icon:const Icon(Icons.check_circle_outline),label:const Text('تسجيل جلسة'))])
+        ])))
+      ]))
+    ]);
+  });
 }
 class PackageForm extends StatefulWidget{
   final List<Patient> patients;
@@ -366,17 +350,14 @@ class _PackageFormState extends State<PackageForm>{
   late String pid;
   final name=TextEditingController(),price=TextEditingController(),paid=TextEditingController(),sessions=TextEditingController();
   @override void initState(){super.initState();pid=widget.patients.first.id;}
-  @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(
-    appBar:AppBar(title:const Text('باقة جديدة')),
-    body:ListView(padding:const EdgeInsets.all(16),children:[
-      DropdownButtonFormField(value:pid,decoration:const InputDecoration(labelText:'المريض'),items:widget.patients.map((p)=>DropdownMenuItem(value:p.id,child:Text(p.name))).toList(),onChanged:(v)=>setState(()=>pid=v!)),
-      const SizedBox(height:10),TextField(controller:name,decoration:const InputDecoration(labelText:'اسم الباقة')),
-      const SizedBox(height:10),TextField(controller:price,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'السعر')),
-      const SizedBox(height:10),TextField(controller:paid,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'المدفوع')),
-      const SizedBox(height:10),TextField(controller:sessions,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'عدد الجلسات')),
-      const SizedBox(height:20),FilledButton(onPressed:(){final s=int.tryParse(sessions.text)??0;Navigator.pop(c,PackageRecord(id:idNow(),patientId:pid,name:name.text,price:double.tryParse(price.text)??0,paid:double.tryParse(paid.text)??0,sessions:s,remaining:s,startDate:dateOnly(DateTime.now()),endDate:dateOnly(DateTime.now().add(const Duration(days:30)))));},child:const Text('حفظ الباقة'))
-    ])
-  ));
+  @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:const Text('باقة جديدة')),body:ListView(padding:const EdgeInsets.all(16),children:[
+    DropdownButtonFormField(value:pid,decoration:const InputDecoration(labelText:'المريض'),items:widget.patients.map((p)=>DropdownMenuItem(value:p.id,child:Text(p.name))).toList(),onChanged:(v)=>setState(()=>pid=v!)),
+    const SizedBox(height:10),TextField(controller:name,decoration:const InputDecoration(labelText:'اسم الباقة')),
+    const SizedBox(height:10),TextField(controller:price,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'السعر')),
+    const SizedBox(height:10),TextField(controller:paid,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'المدفوع')),
+    const SizedBox(height:10),TextField(controller:sessions,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'عدد الجلسات')),
+    const SizedBox(height:20),SizedBox(height:50,child:FilledButton.icon(onPressed:(){final s=int.tryParse(sessions.text)??0;if(name.text.trim().isEmpty||s<=0){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل اسم الباقة وعدد جلسات صحيح')));return;}final p=double.tryParse(price.text)??0,paidValue=double.tryParse(paid.text)??0;if(p<0||paidValue<0||paidValue>p){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تحقق من السعر والمدفوع')));return;}Navigator.pop(c,PackageRecord(id:idNow(),patientId:pid,name:name.text.trim(),price:p,paid:paidValue,sessions:s,remaining:s,startDate:dateOnly(DateTime.now()),endDate:dateOnly(DateTime.now().add(const Duration(days:30)))));},icon:const Icon(Icons.save),label:const Text('حفظ الباقة')))
+  ]));
 }
 class InvoicesPage extends StatefulWidget{final VoidCallback changed;const InvoicesPage({super.key,required this.changed});@override State<InvoicesPage> createState()=>_InvoicesPageState();}
 class _InvoicesPageState extends State<InvoicesPage>{
