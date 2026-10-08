@@ -195,24 +195,27 @@ class _PatientsPageState extends State<PatientsPage>{
 }
 class PatientForm extends StatefulWidget{const PatientForm({super.key});@override State<PatientForm> createState()=>_PatientFormState();}
 class _PatientFormState extends State<PatientForm>{
-  final name=TextEditingController(),phone=TextEditingController(),national=TextEditingController(),service=TextEditingController(),doctor=TextEditingController(),address=TextEditingController(),notes=TextEditingController();
-  String gender='ذكر',department='العلاج الطبيعي';
-  Future<void> save()async{
-    if(name.text.trim().isEmpty||phone.text.trim().isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل اسم المريض ورقم الهاتف')));return;}
-    final n=await LocalStore.nextPatientNumber();
-    Navigator.pop(context,Patient(id:idNow(),fileNo:'P-'+n.toString(),name:name.text.trim(),phone:phone.text.trim(),nationalId:national.text.trim(),gender:gender,department:department,service:service.text.trim(),doctor:doctor.text.trim(),address:address.text.trim(),notes:notes.text.trim(),createdAt:dateOnly(DateTime.now())));
-  }
+  final name=TextEditingController(),phone=TextEditingController(),alternate=TextEditingController(),national=TextEditingController(),service=TextEditingController(),doctor=TextEditingController(),address=TextEditingController(),notes=TextEditingController();
+  String gender='ذكر',department='العلاج الطبيعي',channel='النظام'; DateTime? birth;
+  Future<void> pickBirth()async{final d=await showDatePicker(context:context,initialDate:DateTime(2000),firstDate:DateTime(1900),lastDate:DateTime.now());if(d!=null)setState(()=>birth=d);}
+  int? age(){if(birth==null)return null;final now=DateTime.now();var a=now.year-birth!.year;if(now.month<birth!.month||(now.month==birth!.month&&now.day<birth!.day))a--;return a;}
+  Future<void> save()async{if(name.text.trim().isEmpty||phone.text.trim().isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل اسم المريض ورقم الهاتف')));return;}final n=await LocalStore.nextPatientNumber();final extra=alternate.text.trim().isEmpty?'':'هاتف بديل: '+alternate.text.trim();final note=notes.text.trim();final p=Patient(id:idNow(),fileNo:'P-'+n.toString(),name:name.text.trim(),phone:phone.text.trim(),nationalId:national.text.trim(),birthDate:birth==null?'':dateOnly(birth!),gender:gender,department:department,service:service.text.trim(),doctor:doctor.text.trim(),address:address.text.trim(),notes:extra+(extra.isNotEmpty&&note.isNotEmpty?'\n':'')+note,createdAt:dateOnly(DateTime.now()));Navigator.pop(context,p);}
   @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:const Text('تسجيل مريض جديد')),body:ListView(padding:const EdgeInsets.all(16),children:[
-    TextField(controller:name,decoration:const InputDecoration(labelText:'اسم المريض *')),const SizedBox(height:10),
-    TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'رقم الهاتف *')),const SizedBox(height:10),
-    TextField(controller:national,decoration:const InputDecoration(labelText:'الهوية / الرقم الوطني')),const SizedBox(height:10),
+    TextField(controller:name,decoration:const InputDecoration(labelText:'اسم المريض *',prefixIcon:Icon(Icons.person_outline))),const SizedBox(height:10),
+    TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'رقم الهاتف *',prefixIcon:Icon(Icons.phone))),const SizedBox(height:10),
+    TextField(controller:alternate,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'رقم هاتف بديل',prefixIcon:Icon(Icons.phone_android))),const SizedBox(height:10),
+    TextField(controller:national,decoration:const InputDecoration(labelText:'الهوية / الرقم الوطني',prefixIcon:Icon(Icons.badge_outlined))),const SizedBox(height:10),
+    InkWell(onTap:pickBirth,child:InputDecorator(decoration:const InputDecoration(labelText:'تاريخ الميلاد',prefixIcon:Icon(Icons.cake_outlined)),child:Text(birth==null?'اختر التاريخ':dateOnly(birth!)))),const SizedBox(height:10),
+    InputDecorator(decoration:const InputDecoration(labelText:'العمر'),child:Text(age()==null?'—':age().toString()+' سنة')),const SizedBox(height:10),
     DropdownButtonFormField(value:gender,decoration:const InputDecoration(labelText:'الجنس'),items:['ذكر','أنثى'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setState(()=>gender=v!)),const SizedBox(height:10),
-    TextField(controller:service,decoration:const InputDecoration(labelText:'الخدمة / الشكوى')),const SizedBox(height:10),
-    TextField(controller:doctor,decoration:const InputDecoration(labelText:'الطبيب / الأخصائي')),const SizedBox(height:10),
-    TextField(controller:address,decoration:const InputDecoration(labelText:'العنوان')),const SizedBox(height:10),
+    DropdownButtonFormField(value:department,decoration:const InputDecoration(labelText:'القسم'),items:['العلاج الطبيعي','العيادة','الأسنان','التمريض','أخرى'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setState(()=>department=v!)),const SizedBox(height:10),
+    TextField(controller:service,decoration:const InputDecoration(labelText:'الخدمة / الشكوى',prefixIcon:Icon(Icons.medical_services_outlined))),const SizedBox(height:10),
+    TextField(controller:doctor,decoration:const InputDecoration(labelText:'الطبيب / الأخصائي',prefixIcon:Icon(Icons.person_search_outlined))),const SizedBox(height:10),
+    TextField(controller:address,decoration:const InputDecoration(labelText:'العنوان',prefixIcon:Icon(Icons.location_on_outlined))),const SizedBox(height:10),
+    DropdownButtonFormField(value:channel,decoration:const InputDecoration(labelText:'قناة إشعار التسجيل'),items:['النظام','WhatsApp','SMS','بدون'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setState(()=>channel=v!)),const SizedBox(height:10),
     TextField(controller:notes,maxLines:3,decoration:const InputDecoration(labelText:'ملاحظات')),const SizedBox(height:20),
     SizedBox(height:50,child:FilledButton.icon(onPressed:save,icon:const Icon(Icons.save),label:const Text('حفظ الملف')))
-  ])));
+  ]));
 }
 class PatientDetails extends StatelessWidget{
   final Patient patient;
