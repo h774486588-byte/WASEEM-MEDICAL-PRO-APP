@@ -1,4 +1,5 @@
 name: Build Android APK
+# Release verification build
 
 on:
   workflow_dispatch:
