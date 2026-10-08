@@ -13,7 +13,14 @@ class WaseemMedicalPro extends StatelessWidget{
   @override Widget build(BuildContext context)=>MaterialApp(
     debugShowCheckedModeBanner:false,
     title:'نظام وسيم الطبي PRO',
-    theme:ThemeData(useMaterial3:true,colorSchemeSeed:const Color(0xFF1565C0),scaffoldBackgroundColor:const Color(0xFFF7F9FC)),
+    theme:ThemeData(
+      useMaterial3:true,
+      colorScheme:ColorScheme.fromSeed(seedColor:const Color(0xFF0876D1),brightness:Brightness.light),
+      scaffoldBackgroundColor:const Color(0xFFF5F8FC),
+      appBarTheme:const AppBarTheme(backgroundColor:Color(0xFF0869B9),foregroundColor:Colors.white,elevation:0,centerTitle:false),
+      cardTheme:CardThemeData(elevation:0,margin:EdgeInsets.zero,shape:RoundedRectangleBorder(borderRadius:BorderRadius.all(Radius.circular(18)))),
+      inputDecorationTheme:InputDecorationTheme(filled:true,fillColor:Colors.white,border:OutlineInputBorder(borderRadius:BorderRadius.all(Radius.circular(14)),borderSide:BorderSide.none),enabledBorder:OutlineInputBorder(borderRadius:BorderRadius.all(Radius.circular(14)),borderSide:BorderSide(color:Color(0xFFE2EAF2)),),focusedBorder:OutlineInputBorder(borderRadius:BorderRadius.all(Radius.circular(14)),borderSide:BorderSide(color:Color(0xFF0876D1),width:1.5))),
+    ),
     home:const LoginPage());
 }
 
