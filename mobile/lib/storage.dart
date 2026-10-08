@@ -26,4 +26,6 @@ class LocalStore {
     for(final p in list){final n=int.tryParse(p.fileNo.replaceAll(RegExp(r'[^0-9]'),''))??0;if(n>max)max=n;}
     return max+1;
   }
+  static Future<Map<String,String>> settings() async { final p=await SharedPreferences.getInstance(); return {'name':p.getString('clinic_name')??'نظام وسيم الطبي PRO','phone':p.getString('clinic_phone')??'','address':p.getString('clinic_address')??'','whatsapp':p.getString('clinic_whatsapp')??'false','sms':p.getString('clinic_sms')??'false'}; }
+  static Future<void> saveSettings(Map<String,String> x) async { final p=await SharedPreferences.getInstance(); await p.setString('clinic_name',x['name']??''); await p.setString('clinic_phone',x['phone']??''); await p.setString('clinic_address',x['address']??''); await p.setString('clinic_whatsapp',x['whatsapp']??'false'); await p.setString('clinic_sms',x['sms']??'false'); }
 }
