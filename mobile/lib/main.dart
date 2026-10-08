@@ -421,4 +421,29 @@ class _InvoiceFormState extends State<InvoiceForm>{
     const SizedBox(height:20),SizedBox(height:50,child:FilledButton.icon(onPressed:(){final t=double.tryParse(total.text.trim())??-1,p=double.tryParse(paid.text.trim())??-1;if(t<=0||p<0||p>t){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تحقق من الإجمالي والمدفوع')));return;}Navigator.pop(c,Invoice(id:idNow(),patientId:pid,number:'INV-'+DateTime.now().millisecondsSinceEpoch.toString(),total:t,paid:p,date:dateOnly(DateTime.now()),status:p>=t?'مدفوعة':'جزئية'));},icon:const Icon(Icons.save),label:const Text('حفظ الفاتورة')))
   ]));
 }
-class NotificationsPage extends StatelessWidget{const NotificationsPage({super.key});@override Widget build(BuildContext c)=>FutureBuilder<List<AppNotification>>(future:LocalStore.notifications(),builder:(c,s){final n=s.data??[];return ListView(padding:const EdgeInsets.all(16),children:[const Text('مركز الإشعارات',style:TextStyle(fontSize:24,fontWeight:FontWeight.bold)),const SizedBox(height:12),if(n.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(30),child:Center(child:Text('لا توجد إشعارات')))),...n.map((x)=>Card(child:ListTile(leading:Icon(x.channel=='WhatsApp'?Icons.chat:Icons.notifications),title:Text(x.title),subtitle:Text(x.body+'\n'+x.date),isThreeLine:true,trailing:Text(x.status))))]);});}
+class NotificationsPage extends StatefulWidget{
+  const NotificationsPage({super.key});
+  @override State<NotificationsPage> createState()=>_NotificationsPageState();
+}
+class _NotificationsPageState extends State<NotificationsPage>{
+  Future<void> clear()async{await LocalStore.saveNotifications([]);setState((){});}
+  @override Widget build(BuildContext c)=>FutureBuilder<List<AppNotification>>(future:LocalStore.notifications(),builder:(c,s){
+    final n=s.data??[];
+    return ListView(padding:EdgeInsets.zero,children:[
+      Container(padding:const EdgeInsets.fromLTRB(16,18,16,20),decoration:const BoxDecoration(color:Color(0xFF0869B9),borderRadius:BorderRadius.only(bottomLeft:Radius.circular(26),bottomRight:Radius.circular(26))),child:Row(children:[
+        const Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('مركز الإشعارات',style:TextStyle(color:Colors.white,fontSize:25,fontWeight:FontWeight.bold)),SizedBox(height:4),Text('متابعة تنبيهات النظام والمرضى والجلسات',style:TextStyle(color:Colors.white70))])),
+        if(n.isNotEmpty)IconButton(onPressed:clear,style:IconButton.styleFrom(backgroundColor:Colors.white,foregroundColor:Color(0xFF0869B9)),icon:const Icon(Icons.delete_sweep_outlined))
+      ])),
+      Padding(padding:const EdgeInsets.fromLTRB(16,18,16,8),child:Text(n.length.toString()+' إشعار',style:const TextStyle(fontSize:20,fontWeight:FontWeight.bold,color:Color(0xFF12395C)))),
+      Padding(padding:const EdgeInsets.symmetric(horizontal:16),child:Column(children:[
+        if(n.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(32),child:Center(child:Text('لا توجد إشعارات حالياً')))),
+        ...n.map((x)=>Card(margin:const EdgeInsets.only(bottom:10),child:ListTile(
+          leading:CircleAvatar(backgroundColor:x.channel=='WhatsApp'?const Color(0xFFEAFBF1):const Color(0xFFEAF4FF),child:Icon(x.channel=='WhatsApp'?Icons.chat_bubble_outline:Icons.notifications_none_rounded,color:x.channel=='WhatsApp'?const Color(0xFF15945A):const Color(0xFF0869B9))),
+          title:Text(x.title,style:const TextStyle(fontWeight:FontWeight.bold)),
+          subtitle:Text(x.body+'\\n'+x.date, maxLines:3,overflow:TextOverflow.ellipsis),
+          trailing:Text(x.status,style:const TextStyle(fontSize:11,color:Colors.black54))
+        )))
+      ]))
+    ]);
+  });
+}
