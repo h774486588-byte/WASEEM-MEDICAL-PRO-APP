@@ -138,8 +138,65 @@ class _AppointmentFormState extends State<AppointmentForm>{late String pid;final
 
 class PackagesPage extends StatefulWidget{final VoidCallback changed;const PackagesPage({super.key,required this.changed});@override State<PackagesPage> createState()=>_PackagesPageState();}
 class _PackagesPageState extends State<PackagesPage>{
-  Future<void> add()async{final ps=await LocalStore.patients();if(ps.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أضف مريضاً أولاً')));return;}final r=await Navigator.push<PackageRecord>(context,MaterialPageRoute(builder:(_)=>PackageForm(patients:ps)));if(r==null)return;final l=await LocalStore.packages();l.add(r);await LocalStore.savePackages(l);setState((){});widget.changed();}
-  @override Widget build(BuildContext c)=>FutureBuilder(future:Future.wait([LocalStore.packages(),LocalStore.patients()]),builder:(c,s){if(!s.hasData)return const Center(child:CircularProgressIndicator());final g=s.data![0] as List<PackageRecord>,ps=s.data![1] as List<Patient>;String pname(String id){for(final p in ps){if(p.id==id)return p.name;}return 'غير معروف';}return ListView(padding:const EdgeInsets.all(16),children:[Row(children:[const Expanded(child:Text('الباقات والجلسات',style:TextStyle(fontSize:24,fontWeight:FontWeight.bold))),FilledButton.icon(onPressed:add,icon:const Icon(Icons.add),label:const Text('باقة جديدة'))]),const SizedBox(height:12),if(g.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(28),child:Center(child:Text('لا توجد باقات')))),...g.map((x)=>Card(child:ListTile(title:Text(x.name),subtitle:Text(pname(x.patientId)+' • '+x.remaining.toString()+' جلسة متبقية'),trailing:Text(x.paid.toStringAsFixed(0)+' / '+x.price.toStringAsFixed(0)))))]);});
+  Future<void> add()async{
+    final ps=await LocalStore.patients();
+    if(ps.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أضف مريضاً أولاً')));return;}
+    final r=await Navigator.push<PackageRecord>(context,MaterialPageRoute(builder:(_)=>PackageForm(patients:ps)));
+    if(r==null)return;
+    final l=await LocalStore.packages();l.add(r);await LocalStore.savePackages(l);setState((){});widget.changed();
+  }
+
+  Future<void> registerSession(PackageRecord item)async{
+    if(item.remaining<=0){
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('لا توجد جلسات متبقية في هذه الباقة')));
+      return;
+    }
+    final list=await LocalStore.packages();
+    final index=list.indexWhere((x)=>x.id==item.id);
+    if(index<0)return;
+    final left=item.remaining-1;
+    list[index]=PackageRecord(
+      id:item.id,patientId:item.patientId,name:item.name,price:item.price,paid:item.paid,
+      sessions:item.sessions,remaining:left,startDate:item.startDate,endDate:item.endDate);
+    await LocalStore.savePackages(list);
+
+    final notes=await LocalStore.notifications();
+    if(left<=2){
+      notes.insert(0,AppNotification(
+        id:idNow(),
+        title:left==0?'انتهاء الباقة':'تنبيه قرب انتهاء الباقة',
+        body:left==0?'انتهت جميع جلسات باقة '+item.name:'تبقى '+left.toString()+' جلسة من باقة '+item.name,
+        channel:'النظام',status:'جاهز',date:dateOnly(DateTime.now())));
+      await LocalStore.saveNotifications(notes);
+    }
+    setState((){});widget.changed();
+    if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تم تسجيل الجلسة. المتبقي: '+left.toString())));
+  }
+
+  @override Widget build(BuildContext c)=>FutureBuilder(
+    future:Future.wait([LocalStore.packages(),LocalStore.patients()]),
+    builder:(c,s){
+      if(!s.hasData)return const Center(child:CircularProgressIndicator());
+      final g=s.data![0] as List<PackageRecord>,ps=s.data![1] as List<Patient>;
+      String pname(String id){for(final p in ps){if(p.id==id)return p.name;}return 'غير معروف';}
+      return ListView(padding:const EdgeInsets.all(16),children:[
+        Row(children:[
+          const Expanded(child:Text('الباقات والجلسات',style:TextStyle(fontSize:24,fontWeight:FontWeight.bold))),
+          FilledButton.icon(onPressed:add,icon:const Icon(Icons.add),label:const Text('باقة جديدة'))
+        ]),
+        const SizedBox(height:12),
+        if(g.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(28),child:Center(child:Text('لا توجد باقات')))),
+        ...g.map((x)=>Card(child:ListTile(
+          title:Text(x.name),
+          subtitle:Text(pname(x.patientId)+' • '+x.remaining.toString()+' جلسة متبقية'),
+          trailing:FilledButton.tonalIcon(
+            onPressed:()=>registerSession(x),
+            icon:const Icon(Icons.medical_services_outlined),
+            label:const Text('تسجيل جلسة'),
+          ),
+        )))
+      ]);
+    });
 }
 class PackageForm extends StatefulWidget{final List<Patient> patients;const PackageForm({super.key,required this.patients});@override State<PackageForm> createState()=>_PackageFormState();}
 class _PackageFormState extends State<PackageForm>{late String pid;final name=TextEditingController(),price=TextEditingController(),paid=TextEditingController(),sessions=TextEditingController();@override void initState(){super.initState();pid=widget.patients.first.id;}@override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:const Text('باقة جديدة')),body:ListView(padding:const EdgeInsets.all(16),children:[
