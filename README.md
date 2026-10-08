@@ -27,3 +27,7 @@
 flutter pub get
 flutter run
 ```
+
+
+## Android build
+يتم بناء نسخة APK تلقائياً عبر GitHub Actions عند تحديث الفرع main.
