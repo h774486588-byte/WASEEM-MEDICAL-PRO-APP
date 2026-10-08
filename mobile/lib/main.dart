@@ -25,7 +25,7 @@ class _LoginPageState extends State<LoginPage>{
     Text('إدارة مركزك الطبي باحترافية'),SizedBox(height:28),
     TextField(controller:user,decoration:InputDecoration(labelText:'اسم المستخدم',prefixIcon:Icon(Icons.person_outline))),
     SizedBox(height:12),TextField(controller:pass,obscureText:true,decoration:InputDecoration(labelText:'كلمة المرور',prefixIcon:Icon(Icons.lock_outline))),
-    SizedBox(height:20),SizedBox(width:double.infinity,height:52,child:FilledButton(onPressed:()=>Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>const Dashboard())),child:Text('دخول')))
+    SizedBox(height:20),SizedBox(width:double.infinity,height:52,child:FilledButton(onPressed:(){if(user.text.trim()!='admin'||pass.text!='1234'){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('بيانات الدخول غير صحيحة')));return;}Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>const Dashboard()));},child:Text('دخول')))
   ]))))));
 }
 
