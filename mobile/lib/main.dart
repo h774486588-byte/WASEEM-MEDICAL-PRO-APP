@@ -35,46 +35,102 @@ class _DashboardState extends State<Dashboard>{
   int index=0,version=0;
   final names=['الرئيسية','المرضى','المواعيد','الباقات','الفواتير','الإشعارات','التقارير','الإعدادات'];
   void refresh()=>setState(()=>version++);
+  void go(int i)=>setState(()=>index=i);
   @override Widget build(BuildContext context){
     final pages=[
-      HomePage(key:ValueKey('h'+version.toString()),open:(i)=>setState(()=>index=i)),
+      HomePage(key:ValueKey('h'+version.toString()),open:go),
       PatientsPage(key:ValueKey('p'+version.toString()),changed:refresh),
       AppointmentsPage(key:ValueKey('a'+version.toString()),changed:refresh),
       PackagesPage(key:ValueKey('g'+version.toString()),changed:refresh),
       InvoicesPage(key:ValueKey('i'+version.toString()),changed:refresh),
-      NotificationsPage(key:ValueKey('n'+version.toString())),ReportsPage(key:ValueKey('r'+version.toString())),SettingsPage(key:ValueKey('s'+version.toString()))
+      NotificationsPage(key:ValueKey('n'+version.toString())),
+      ReportsPage(key:ValueKey('r'+version.toString())),
+      SettingsPage(key:ValueKey('s'+version.toString()))
     ];
     return Directionality(textDirection:TextDirection.rtl,child:Scaffold(
-      appBar:AppBar(title:Text(names[index]),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
-      drawer:Drawer(child:ListView(children:[
-        const DrawerHeader(child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.end,children:[Icon(Icons.local_hospital,size:42,color:Color(0xFF1565C0)),SizedBox(height:8),Text('نظام وسيم الطبي PRO',style:TextStyle(fontWeight:FontWeight.bold,fontSize:18))])),
-        for(int i=0;i<names.length;i++)ListTile(selected:index==i,leading:Icon([Icons.dashboard,Icons.people,Icons.calendar_month,Icons.inventory_2,Icons.receipt_long,Icons.notifications_none,Icons.analytics_outlined,Icons.settings_outlined][i]),title:Text(names[i]),onTap:(){setState(()=>index=i);Navigator.pop(context);}),
-        const Divider()
+      backgroundColor:const Color(0xFFF5F8FC),
+      appBar: index==0 ? null : AppBar(
+        backgroundColor:const Color(0xFF0869B9),foregroundColor:Colors.white,
+        title:Text(names[index],style:const TextStyle(fontWeight:FontWeight.bold)),
+        actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh_rounded))]
+      ),
+      drawer:Drawer(child:ListView(padding:EdgeInsets.zero,children:[
+        Container(height:190,padding:const EdgeInsets.fromLTRB(20,35,20,20),decoration:const BoxDecoration(color:Color(0xFF0869B9)),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.end,children:[
+          Row(children:[Container(width:54,height:54,decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(16)),child:const Icon(Icons.favorite_border_rounded,size:34,color:Color(0xFF0869B9))),const SizedBox(width:12),const Expanded(child:Text('مركز وسيم الطبي\nWASEEM MEDICAL CENTER',style:TextStyle(color:Colors.white,fontSize:17,fontWeight:FontWeight.bold)))]),
+          const SizedBox(height:8),const Text('نظام إدارة المركز الطبي PRO',style:TextStyle(color:Colors.white70))
+        ])),
+        for(int i=0;i<names.length;i++)ListTile(selected:index==i,selectedColor:const Color(0xFF0869B9),leading:Icon([Icons.home_rounded,Icons.people_alt_rounded,Icons.calendar_month_rounded,Icons.layers_rounded,Icons.receipt_long_rounded,Icons.notifications_rounded,Icons.bar_chart_rounded,Icons.settings_rounded][i]),title:Text(names[i],style:const TextStyle(fontWeight:FontWeight.w600)),onTap:(){go(i);Navigator.pop(context);}})
       ])),
-      body:pages[index]));
+      body:pages[index],
+      bottomNavigationBar: index<6 ? NavigationBar(
+        selectedIndex:index>4?4:index,
+        onDestinationSelected:(i){if(i<5)go(i);},
+        backgroundColor:Colors.white,
+        destinations:const[
+          NavigationDestination(icon:Icon(Icons.home_outlined),selectedIcon:Icon(Icons.home),label:'الرئيسية'),
+          NavigationDestination(icon:Icon(Icons.people_outline),selectedIcon:Icon(Icons.people),label:'المرضى'),
+          NavigationDestination(icon:Icon(Icons.calendar_month_outlined),selectedIcon:Icon(Icons.calendar_month),label:'المواعيد'),
+          NavigationDestination(icon:Icon(Icons.medical_services_outlined),selectedIcon:Icon(Icons.medical_services),label:'الباقات'),
+          NavigationDestination(icon:Icon(Icons.more_horiz),selectedIcon:Icon(Icons.more_horiz),label:'المزيد')
+        ]):null
+    ));
   }
 }
 
 class HomePage extends StatelessWidget{
   final void Function(int) open; const HomePage({super.key,required this.open});
-  Future<List<int>> stats()async{
+  Future<Map<String,dynamic>> data()async{
     final p=await LocalStore.patients(),a=await LocalStore.appointments(),g=await LocalStore.packages(),i=await LocalStore.invoices();
     final today=dateOnly(DateTime.now());
-    return [p.length,a.where((x)=>x.date==today).length,g.fold(0,(s,x)=>s+x.remaining),i.where((x)=>x.remaining>0).length];
+    return {'patients':p.length,'appointments':a.where((x)=>x.date==today).length,'sessions':g.fold<int>(0,(s,x)=>s+x.remaining),'revenue':i.fold<double>(0,(s,x)=>s+x.paid),'invoices':i.where((x)=>x.remaining>0).length,'todayApps':a.where((x)=>x.date==today).toList(),'patientsList':p};
   }
-  @override Widget build(BuildContext context)=>FutureBuilder<List<int>>(future:stats(),builder:(c,s){
-    final v=s.data??[0,0,0,0];
-    return ListView(padding:const EdgeInsets.all(16),children:[
-      const Text('مرحباً بك 👋',style:TextStyle(fontSize:26,fontWeight:FontWeight.bold)),const SizedBox(height:4),const Text('لوحة التحكم والمتابعة اليومية'),const SizedBox(height:18),
-      GridView.count(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),crossAxisCount:2,crossAxisSpacing:10,mainAxisSpacing:10,childAspectRatio:1.45,children:[StatCard('المرضى',v[0].toString(),Icons.people),StatCard('مواعيد اليوم',v[1].toString(),Icons.event),StatCard('الجلسات المتبقية',v[2].toString(),Icons.medical_services),StatCard('فواتير عليها رصيد',v[3].toString(),Icons.account_balance_wallet)]),
-      const SizedBox(height:22),const Text('الوصول السريع',style:TextStyle(fontSize:19,fontWeight:FontWeight.bold)),const SizedBox(height:10),
-      Wrap(spacing:8,runSpacing:8,children:[Quick('مريض جديد',Icons.person_add,()=>open(1)),Quick('موعد جديد',Icons.add_alarm,()=>open(2)),Quick('باقة جديدة',Icons.inventory_2,()=>open(3)),Quick('فاتورة جديدة',Icons.receipt_long,()=>open(4))])
+  @override Widget build(BuildContext context)=>FutureBuilder<Map<String,dynamic>>(future:data(),builder:(c,s){
+    final d=s.data??{}; final patients=(d['patientsList'] as List<Patient>?)??[]; final apps=(d['todayApps'] as List<Appointment>?)??[];
+    String pname(String id){for(final p in patients){if(p.id==id)return p.name;}return 'مريض';}
+    return CustomScrollView(slivers:[
+      SliverToBoxAdapter(child:Container(
+        padding:const EdgeInsets.fromLTRB(18,18,18,24),
+        decoration:const BoxDecoration(color:Color(0xFF0869B9),borderRadius:BorderRadius.only(bottomLeft:Radius.circular(28),bottomRight:Radius.circular(28))),
+        child:SafeArea(bottom:false,child:Column(children:[
+          Row(children:[
+            Builder(builder:(ctx)=>IconButton(onPressed:()=>Scaffold.of(ctx).openDrawer(),color:Colors.white,icon:const Icon(Icons.menu_rounded,size:30))),
+            const Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('مركز وسيم الطبي',style:TextStyle(color:Colors.white,fontSize:22,fontWeight:FontWeight.bold)),Text('WASEEM MEDICAL CENTER',style:TextStyle(color:Colors.white70,fontSize:11,letterSpacing:1.1))])),
+            Stack(children:[IconButton(onPressed:()=>open(5),color:Colors.white,icon:const Icon(Icons.notifications_none_rounded,size:28)),Positioned(right:4,top:4,child:Container(padding:const EdgeInsets.all(4),decoration:const BoxDecoration(color:Color(0xFFFF4D5E),shape:BoxShape.circle),child:const Text('5',style:TextStyle(color:Colors.white,fontSize:10,fontWeight:FontWeight.bold))))])
+          ]),
+          const SizedBox(height:12),
+          Container(width:double.infinity,padding:const EdgeInsets.all(18),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(20)),child:const Row(children:[
+            CircleAvatar(radius:28,backgroundColor:Color(0xFFE8F3FF),child:Icon(Icons.favorite_rounded,color:Color(0xFF0869B9),size:32)),
+            SizedBox(width:14),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('مرحباً بك في مركز وسيم الطبي',style:TextStyle(color:Color(0xFF12395C),fontSize:18,fontWeight:FontWeight.bold)),SizedBox(height:5),Text('إدارة متكاملة لمرضاك ومواعيدك وفواتيرك',style:TextStyle(color:Colors.black54))]))
+          ]))
+        ]))
+      )),
+      SliverPadding(padding:const EdgeInsets.fromLTRB(14,16,14,0),sliver:SliverGrid(delegate:SliverChildListDelegate([
+        _DashStat('إجمالي المرضى',(d['patients']??0).toString(),Icons.people_alt_rounded,const Color(0xFFEAF4FF),const Color(0xFF0876D1)),
+        _DashStat('مواعيد اليوم',(d['appointments']??0).toString(),Icons.calendar_month_rounded,const Color(0xFFEAFBF1),const Color(0xFF16A05D)),
+        _DashStat('الجلسات المتبقية',(d['sessions']??0).toString(),Icons.layers_rounded,const Color(0xFFFFF2F5),const Color(0xFFE7385B)),
+        _DashStat('إجمالي الإيرادات',(d['revenue']??0).toStringAsFixed(0),Icons.payments_rounded,const Color(0xFFFFF5E9),const Color(0xFFE58B00))
+      ]),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,crossAxisSpacing:10,mainAxisSpacing:10,childAspectRatio:1.75))),
+      SliverToBoxAdapter(child:Padding(padding:const EdgeInsets.fromLTRB(16,22,16,10),child:const Text('الوصول السريع',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold,color:Color(0xFF12395C))))),
+      SliverPadding(padding:const EdgeInsets.symmetric(horizontal:16),sliver:SliverGrid(delegate:SliverChildListDelegate([
+        _QuickTile('المرضى','إدارة ملفات المرضى',Icons.people_alt_rounded,const Color(0xFF0876D1),()=>open(1)),
+        _QuickTile('المواعيد','حجز وإدارة المواعيد',Icons.calendar_month_rounded,const Color(0xFFFF4B57),()=>open(2)),
+        _QuickTile('الجلسات والباقات','متابعة الجلسات',Icons.layers_rounded,const Color(0xFF7B3FE4),()=>open(3)),
+        _QuickTile('الفواتير','إصدار وإدارة الفواتير',Icons.receipt_long_rounded,const Color(0xFF0A9A88),()=>open(4)),
+        _QuickTile('المخزون','إدارة الأصناف',Icons.inventory_2_rounded,const Color(0xFFF08A00),()=>open(3)),
+        _QuickTile('الطاقم الطبي','إدارة الموظفين',Icons.groups_rounded,const Color(0xFF149B92),()=>open(7)),
+        _QuickTile('التقارير','إحصائيات وتقارير',Icons.bar_chart_rounded,const Color(0xFF7040D8),()=>open(6)),
+        _QuickTile('الإعدادات','إعدادات المركز',Icons.settings_rounded,const Color(0xFF1677D2),()=>open(7))
+      ]),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,crossAxisSpacing:10,mainAxisSpacing:10,childAspectRatio:1.25))),
+      SliverToBoxAdapter(child:Padding(padding:const EdgeInsets.fromLTRB(16,24,16,10),child:Row(children:[const Expanded(child:Text('مواعيد اليوم',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold,color:Color(0xFF12395C)))),TextButton(onPressed:()=>open(2),child:const Text('عرض الكل'))]))),
+      SliverPadding(padding:const EdgeInsets.fromLTRB(16,0,16,24),sliver:SliverList(delegate:SliverChildListDelegate([
+        if(apps.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(24),child:Center(child:Text('لا توجد مواعيد اليوم')))),
+        ...apps.take(5).map((x)=>Card(margin:const EdgeInsets.only(bottom:8),child:ListTile(leading:CircleAvatar(backgroundColor:const Color(0xFFE8F3FF),child:const Icon(Icons.person,color:Color(0xFF0876D1))),title:Text(pname(x.patientId),style:const TextStyle(fontWeight:FontWeight.bold)),subtitle:Text(x.time+' • '+x.doctor),trailing:Container(padding:const EdgeInsets.symmetric(horizontal:10,vertical:6),decoration:BoxDecoration(color:x.status=='مؤكد'?const Color(0xFFE8F8EF):const Color(0xFFFFF3DF),borderRadius:BorderRadius.circular(10)),child:Text(x.status.isEmpty?'مؤكد':x.status)))
+      ])))
     ]);
   });
 }
-class StatCard extends StatelessWidget{final String title,value;final IconData icon;const StatCard(this.title,this.value,this.icon,{super.key});@override Widget build(BuildContext c)=>Card(child:Padding(padding:const EdgeInsets.all(15),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Icon(icon,color:Theme.of(c).colorScheme.primary),const Spacer(),Text(value,style:const TextStyle(fontSize:25,fontWeight:FontWeight.bold)),Text(title)])));}
-class Quick extends StatelessWidget{final String title;final IconData icon;final VoidCallback tap;const Quick(this.title,this.icon,this.tap,{super.key});@override Widget build(BuildContext c)=>FilledButton.tonalIcon(onPressed:tap,icon:Icon(icon),label:Text(title));}
-
+class _DashStat extends StatelessWidget{final String title,value;final IconData icon;final Color bg,fg;const _DashStat(this.title,this.value,this.icon,this.bg,this.fg);@override Widget build(BuildContext c)=>Card(elevation:0,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(18)),child:Container(padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:bg,borderRadius:BorderRadius.circular(18)),child:Row(children:[Icon(icon,color:fg,size:30),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[Text(value,style:TextStyle(fontSize:22,fontWeight:FontWeight.bold,color:fg),maxLines:1),Text(title,style:const TextStyle(fontSize:11,color:Color(0xFF456174)),maxLines:2)])])));}
+class _QuickTile extends StatelessWidget{final String title,sub;final IconData icon;final Color color;final VoidCallback tap;const _QuickTile(this.title,this.sub,this.icon,this.color,this.tap);@override Widget build(BuildContext c)=>Card(elevation:0,child:InkWell(borderRadius:BorderRadius.circular(18),onTap:tap,child:Padding(padding:const EdgeInsets.all(13),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[Container(width:44,height:44,decoration:BoxDecoration(color:color.withOpacity(.12),borderRadius:BorderRadius.circular(13)),child:Icon(icon,color:color)),const SizedBox(height:9),Text(title,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:15)),const SizedBox(height:2),Text(sub,style:const TextStyle(fontSize:11,color:Colors.black54))])));}
 class PatientsPage extends StatefulWidget{final VoidCallback changed;const PatientsPage({super.key,required this.changed});@override State<PatientsPage> createState()=>_PatientsPageState();}
 class _PatientsPageState extends State<PatientsPage>{
   String q='';
