@@ -113,7 +113,7 @@ class _PatientFormState extends State<PatientForm>{
     TextField(controller:address,decoration:const InputDecoration(labelText:'العنوان')),const SizedBox(height:10),
     TextField(controller:notes,maxLines:3,decoration:const InputDecoration(labelText:'ملاحظات')),const SizedBox(height:20),
     SizedBox(height:50,child:FilledButton.icon(onPressed:save,icon:const Icon(Icons.save),label:const Text('حفظ الملف')))
-  ]));
+  ])));
 }
 class PatientDetails extends StatelessWidget{final Patient patient;const PatientDetails({super.key,required this.patient});@override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:Text(patient.fileNo)),body:ListView(padding:const EdgeInsets.all(16),children:[
   Card(child:ListTile(leading:const CircleAvatar(child:Icon(Icons.person)),title:Text(patient.name,style:const TextStyle(fontWeight:FontWeight.bold)),subtitle:Text(patient.phone))),Info('الجنس',patient.gender),Info('الخدمة',patient.service),Info('الطبيب',patient.doctor),Info('العنوان',patient.address),Info('ملاحظات',patient.notes)
