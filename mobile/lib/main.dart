@@ -138,26 +138,61 @@ class HomePage extends StatelessWidget{
 }
 class _DashStat extends StatelessWidget{final String title,value;final IconData icon;final Color bg,fg;const _DashStat(this.title,this.value,this.icon,this.bg,this.fg);@override Widget build(BuildContext c)=>Card(elevation:0,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(18)),child:Container(padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:bg,borderRadius:BorderRadius.circular(18)),child:Row(children:[Icon(icon,color:fg,size:30),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[Text(value,style:TextStyle(fontSize:22,fontWeight:FontWeight.bold,color:fg),maxLines:1),Text(title,style:const TextStyle(fontSize:11,color:Color(0xFF456174)),maxLines:2)])])));}
 class _QuickTile extends StatelessWidget{final String title,sub;final IconData icon;final Color color;final VoidCallback tap;const _QuickTile(this.title,this.sub,this.icon,this.color,this.tap);@override Widget build(BuildContext c)=>Card(elevation:0,child:InkWell(borderRadius:BorderRadius.circular(18),onTap:tap,child:Padding(padding:const EdgeInsets.all(13),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[Container(width:44,height:44,decoration:BoxDecoration(color:color.withOpacity(.12),borderRadius:BorderRadius.circular(13)),child:Icon(icon,color:color)),const SizedBox(height:9),Text(title,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:15)),const SizedBox(height:2),Text(sub,style:const TextStyle(fontSize:11,color:Colors.black54))])));}
-class PatientsPage extends StatefulWidget{final VoidCallback changed;const PatientsPage({super.key,required this.changed});@override State<PatientsPage> createState()=>_PatientsPageState();}
+class PatientsPage extends StatefulWidget{
+  final VoidCallback changed;
+  const PatientsPage({super.key,required this.changed});
+  @override State<PatientsPage> createState()=>_PatientsPageState();
+}
 class _PatientsPageState extends State<PatientsPage>{
   String q='';
   Future<void> add()async{
     final r=await Navigator.push<Patient>(context,MaterialPageRoute(builder:(_)=>const PatientForm()));
-    if(r==null)return;final list=await LocalStore.patients();list.add(r);await LocalStore.savePatients(list);
-    final ns=await LocalStore.notifications();ns.insert(0,AppNotification(id:idNow(),title:'تسجيل مريض جديد',body:'تم تسجيل '+r.name+' برقم الملف '+r.fileNo,channel:'النظام',status:'جاهز',date:dateOnly(DateTime.now())));await LocalStore.saveNotifications(ns);
+    if(r==null)return;
+    final list=await LocalStore.patients();list.add(r);await LocalStore.savePatients(list);
+    final ns=await LocalStore.notifications();
+    ns.insert(0,AppNotification(id:idNow(),title:'تسجيل مريض جديد',body:'تم تسجيل '+r.name+' برقم الملف '+r.fileNo,channel:'النظام',status:'جاهز',date:dateOnly(DateTime.now())));
+    await LocalStore.saveNotifications(ns);
     setState((){});widget.changed();
   }
   @override Widget build(BuildContext c)=>FutureBuilder<List<Patient>>(future:LocalStore.patients(),builder:(c,s){
-    final all=s.data??[];final list=all.where((p)=>p.name.contains(q)||p.fileNo.contains(q)||p.phone.contains(q)).toList();
-    return ListView(padding:const EdgeInsets.all(16),children:[
-      Row(children:[const Expanded(child:Text('المرضى',style:TextStyle(fontSize:24,fontWeight:FontWeight.bold))),FilledButton.icon(onPressed:add,icon:const Icon(Icons.add),label:const Text('مريض جديد'))]),
-      const SizedBox(height:12),TextField(onChanged:(x)=>setState(()=>q=x),decoration:const InputDecoration(hintText:'بحث بالاسم أو رقم الملف أو الهاتف',prefixIcon:Icon(Icons.search))),
-      const SizedBox(height:10),if(list.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(30),child:Center(child:Text('لا توجد سجلات')))),
-      ...list.map((p)=>Card(child:ListTile(leading:CircleAvatar(child:Text(p.fileNo.replaceAll('P-',''))),title:Text(p.name),subtitle:Text(p.fileNo+' • '+p.phone),trailing:const Icon(Icons.chevron_left),onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>PatientDetails(patient:p))))))
+    final all=s.data??[];
+    final list=all.where((p)=>q.trim().isEmpty||p.name.contains(q)||p.fileNo.contains(q)||p.phone.contains(q)).toList();
+    return CustomScrollView(slivers:[
+      SliverToBoxAdapter(child:Container(
+        padding:const EdgeInsets.fromLTRB(16,18,16,22),
+        decoration:const BoxDecoration(color:Color(0xFF0869B9),borderRadius:BorderRadius.only(bottomLeft:Radius.circular(26),bottomRight:Radius.circular(26))),
+        child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          const Text('المرضى',style:TextStyle(color:Colors.white,fontSize:25,fontWeight:FontWeight.bold)),
+          const SizedBox(height:4),Text(all.length.toString()+' ملف مسجل في النظام',style:const TextStyle(color:Colors.white70)),
+          const SizedBox(height:15),
+          Row(children:[
+            Expanded(child:TextField(onChanged:(x)=>setState(()=>q=x),decoration:InputDecoration(hintText:'ابحث باسم المريض أو رقم الملف',prefixIcon:const Icon(Icons.search),filled:true,fillColor:Colors.white,border:OutlineInputBorder(borderRadius:BorderRadius.circular(14),borderSide:BorderSide.none)))),
+            const SizedBox(width:10),
+            IconButton(onPressed:add,style:IconButton.styleFrom(backgroundColor:Colors.white,foregroundColor:const Color(0xFF0869B9),padding:const EdgeInsets.all(14)),icon:const Icon(Icons.person_add_alt_1_rounded))
+          ])
+        ])
+      )),
+      SliverPadding(padding:const EdgeInsets.fromLTRB(16,16,16,24),sliver:SliverList(delegate:SliverChildListDelegate([
+        if(list.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(32),child:Center(child:Text('لا توجد سجلات مطابقة')))),
+        ...list.map((p)=>Card(margin:const EdgeInsets.only(bottom:10),child:InkWell(
+          borderRadius:BorderRadius.circular(18),
+          onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>PatientDetails(patient:p))),
+          child:Padding(padding:const EdgeInsets.all(12),child:Row(children:[
+            CircleAvatar(radius:27,backgroundColor:const Color(0xFFE8F3FF),child:Text(p.fileNo.replaceAll('P-',''),style:const TextStyle(color:Color(0xFF0869B9),fontWeight:FontWeight.bold))),
+            const SizedBox(width:12),
+            Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+              Text(p.name,style:const TextStyle(fontSize:16,fontWeight:FontWeight.bold)),
+              const SizedBox(height:4),
+              Text(p.fileNo+' • '+p.phone,style:const TextStyle(color:Colors.black54,fontSize:12)),
+              if(p.service.isNotEmpty)Text(p.service,style:const TextStyle(color:Color(0xFF0876D1),fontSize:12))
+            ])),
+            const Icon(Icons.chevron_left_rounded,color:Colors.black38)
+          ]))
+        )))
+      ])))
     ]);
   });
 }
-
 class PatientForm extends StatefulWidget{const PatientForm({super.key});@override State<PatientForm> createState()=>_PatientFormState();}
 class _PatientFormState extends State<PatientForm>{
   final name=TextEditingController(),phone=TextEditingController(),national=TextEditingController(),service=TextEditingController(),doctor=TextEditingController(),address=TextEditingController(),notes=TextEditingController();
