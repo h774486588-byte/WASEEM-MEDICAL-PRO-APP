@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'models.dart';
 import 'storage.dart';
+import 'pro_pages.dart';
 
 void main()=>runApp(const WaseemMedicalPro());
 
@@ -32,7 +33,7 @@ class _LoginPageState extends State<LoginPage>{
 class Dashboard extends StatefulWidget{const Dashboard({super.key});@override State<Dashboard> createState()=>_DashboardState();}
 class _DashboardState extends State<Dashboard>{
   int index=0,version=0;
-  final names=['الرئيسية','المرضى','المواعيد','الباقات','الفواتير','الإشعارات'];
+  final names=['الرئيسية','المرضى','المواعيد','الباقات','الفواتير','الإشعارات','التقارير','الإعدادات'];
   void refresh()=>setState(()=>version++);
   @override Widget build(BuildContext context){
     final pages=[
@@ -41,14 +42,14 @@ class _DashboardState extends State<Dashboard>{
       AppointmentsPage(key:ValueKey('a'+version.toString()),changed:refresh),
       PackagesPage(key:ValueKey('g'+version.toString()),changed:refresh),
       InvoicesPage(key:ValueKey('i'+version.toString()),changed:refresh),
-      NotificationsPage(key:ValueKey('n'+version.toString()))
+      NotificationsPage(key:ValueKey('n'+version.toString())),ReportsPage(key:ValueKey('r'+version.toString())),SettingsPage(key:ValueKey('s'+version.toString()))
     ];
     return Directionality(textDirection:TextDirection.rtl,child:Scaffold(
       appBar:AppBar(title:Text(names[index]),actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))]),
       drawer:Drawer(child:ListView(children:[
         const DrawerHeader(child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.end,children:[Icon(Icons.local_hospital,size:42,color:Color(0xFF1565C0)),SizedBox(height:8),Text('نظام وسيم الطبي PRO',style:TextStyle(fontWeight:FontWeight.bold,fontSize:18))])),
-        for(int i=0;i<names.length;i++)ListTile(selected:index==i,leading:Icon([Icons.dashboard,Icons.people,Icons.calendar_month,Icons.inventory_2,Icons.receipt_long,Icons.notifications_none][i]),title:Text(names[i]),onTap:(){setState(()=>index=i);Navigator.pop(context);}),
-        const Divider(),const ListTile(leading:Icon(Icons.settings_outlined),title:Text('الإعدادات'))
+        for(int i=0;i<names.length;i++)ListTile(selected:index==i,leading:Icon([Icons.dashboard,Icons.people,Icons.calendar_month,Icons.inventory_2,Icons.receipt_long,Icons.notifications_none,Icons.analytics_outlined,Icons.settings_outlined][i]),title:Text(names[i]),onTap:(){setState(()=>index=i);Navigator.pop(context);}),
+        const Divider()
       ])),
       body:pages[index]));
   }
