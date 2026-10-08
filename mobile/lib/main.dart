@@ -359,10 +359,51 @@ class _PackageFormState extends State<PackageForm>{
     const SizedBox(height:20),SizedBox(height:50,child:FilledButton.icon(onPressed:(){final s=int.tryParse(sessions.text)??0;if(name.text.trim().isEmpty||s<=0){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل اسم الباقة وعدد جلسات صحيح')));return;}final p=double.tryParse(price.text)??0,paidValue=double.tryParse(paid.text)??0;if(p<0||paidValue<0||paidValue>p){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تحقق من السعر والمدفوع')));return;}Navigator.pop(c,PackageRecord(id:idNow(),patientId:pid,name:name.text.trim(),price:p,paid:paidValue,sessions:s,remaining:s,startDate:dateOnly(DateTime.now()),endDate:dateOnly(DateTime.now().add(const Duration(days:30)))));},icon:const Icon(Icons.save),label:const Text('حفظ الباقة')))
   ]));
 }
-class InvoicesPage extends StatefulWidget{final VoidCallback changed;const InvoicesPage({super.key,required this.changed});@override State<InvoicesPage> createState()=>_InvoicesPageState();}
+class InvoicesPage extends StatefulWidget{
+  final VoidCallback changed;
+  const InvoicesPage({super.key,required this.changed});
+  @override State<InvoicesPage> createState()=>_InvoicesPageState();
+}
 class _InvoicesPageState extends State<InvoicesPage>{
- Future<void> add()async{final ps=await LocalStore.patients();if(ps.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أضف مريضاً أولاً')));return;}final r=await Navigator.push<Invoice>(context,MaterialPageRoute(builder:(_)=>InvoiceForm(patients:ps)));if(r==null)return;final l=await LocalStore.invoices();l.add(r);await LocalStore.saveInvoices(l);setState((){});widget.changed();}
- @override Widget build(BuildContext c)=>FutureBuilder(future:Future.wait([LocalStore.invoices(),LocalStore.patients()]),builder:(c,s){if(!s.hasData)return const Center(child:CircularProgressIndicator());final inv=s.data![0] as List<Invoice>,ps=s.data![1] as List<Patient>;String pname(String id){for(final p in ps){if(p.id==id)return p.name;}return 'غير معروف';}return ListView(padding:const EdgeInsets.all(16),children:[Row(children:[const Expanded(child:Text('الفواتير والمدفوعات',style:TextStyle(fontSize:24,fontWeight:FontWeight.bold))),FilledButton.icon(onPressed:add,icon:const Icon(Icons.add),label:const Text('فاتورة جديدة'))]),const SizedBox(height:12),if(inv.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(28),child:Center(child:Text('لا توجد فواتير')))),...inv.map((x)=>Card(child:ListTile(title:Text(x.number+' • '+pname(x.patientId)),subtitle:Text('الإجمالي: '+x.total.toStringAsFixed(0)+' | المدفوع: '+x.paid.toStringAsFixed(0)),trailing:Text('متبقي '+x.remaining.toStringAsFixed(0)))))]);});
+  Future<void> add()async{
+    final ps=await LocalStore.patients();
+    if(ps.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أضف مريضاً أولاً')));return;}
+    final r=await Navigator.push<Invoice>(context,MaterialPageRoute(builder:(_)=>InvoiceForm(patients:ps)));
+    if(r==null)return; final l=await LocalStore.invoices();l.add(r);await LocalStore.saveInvoices(l);setState((){});widget.changed();
+  }
+  @override Widget build(BuildContext c)=>FutureBuilder(future:Future.wait([LocalStore.invoices(),LocalStore.patients()]),builder:(c,s){
+    if(!s.hasData)return const Center(child:CircularProgressIndicator());
+    final inv=s.data![0] as List<Invoice>,ps=s.data![1] as List<Patient>;
+    String pname(String id){for(final p in ps){if(p.id==id)return p.name;}return 'غير معروف';}
+    final total=inv.fold<double>(0,(x,e)=>x+e.total),paid=inv.fold<double>(0,(x,e)=>x+e.paid),remaining=inv.fold<double>(0,(x,e)=>x+e.remaining);
+    return ListView(padding:EdgeInsets.zero,children:[
+      Container(padding:const EdgeInsets.fromLTRB(16,18,16,20),decoration:const BoxDecoration(color:Color(0xFF0869B9),borderRadius:BorderRadius.only(bottomLeft:Radius.circular(26),bottomRight:Radius.circular(26))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Row(children:[const Expanded(child:Text('الفواتير والمدفوعات',style:TextStyle(color:Colors.white,fontSize:25,fontWeight:FontWeight.bold))),IconButton(onPressed:add,style:IconButton.styleFrom(backgroundColor:Colors.white,foregroundColor:Color(0xFF0869B9)),icon:const Icon(Icons.add_rounded))]),
+        const SizedBox(height:4),Text(inv.length.toString()+' فاتورة مسجلة',style:const TextStyle(color:Colors.white70))
+      ])),
+      Padding(padding:const EdgeInsets.fromLTRB(16,16,16,10),child:Row(children:[
+        Expanded(child:_MoneyCard('الإجمالي',total,Icons.receipt_long_rounded,const Color(0xFFEAF4FF),const Color(0xFF0876D1))),
+        const SizedBox(width:8),Expanded(child:_MoneyCard('المدفوع',paid,Icons.payments_rounded,const Color(0xFFEAFBF1),const Color(0xFF15945A))),
+        const SizedBox(width:8),Expanded(child:_MoneyCard('المتبقي',remaining,Icons.account_balance_wallet_rounded,const Color(0xFFFFF3E2),const Color(0xFFE58B00)))
+      ])),
+      Padding(padding:const EdgeInsets.fromLTRB(16,10,16,8),child:const Text('سجل الفواتير',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold,color:Color(0xFF12395C)))),
+      Padding(padding:const EdgeInsets.symmetric(horizontal:16),child:Column(children:[
+        if(inv.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(28),child:Center(child:Text('لا توجد فواتير')))),
+        ...inv.reversed.map((x)=>Card(margin:const EdgeInsets.only(bottom:10),child:ListTile(
+          leading:CircleAvatar(backgroundColor:const Color(0xFFEAF4FF),child:const Icon(Icons.receipt_long,color:Color(0xFF0869B9))),
+          title:Text(x.number,style:const TextStyle(fontWeight:FontWeight.bold)),
+          subtitle:Text(pname(x.patientId)+' • '+x.date+'\\nالإجمالي '+x.total.toStringAsFixed(0)+' • المدفوع '+x.paid.toStringAsFixed(0)),
+          isThreeLine:true,
+          trailing:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.end,children:[Text(x.remaining.toStringAsFixed(0),style:TextStyle(fontWeight:FontWeight.bold,color:x.remaining<=0?const Color(0xFF15945A):const Color(0xFFE58B00))),Text(x.remaining<=0?'مدفوعة':'متبقي',style:const TextStyle(fontSize:11,color:Colors.black54))])
+        )))
+      ]))
+    ]);
+  });
+}
+class _MoneyCard extends StatelessWidget{
+  final String title; final double value; final IconData icon; final Color bg,fg;
+  const _MoneyCard(this.title,this.value,this.icon,this.bg,this.fg);
+  @override Widget build(BuildContext c)=>Container(padding:const EdgeInsets.all(11),decoration:BoxDecoration(color:bg,borderRadius:BorderRadius.circular(16)),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Icon(icon,color:fg,size:23),const SizedBox(height:7),Text(value.toStringAsFixed(0),style:TextStyle(fontSize:17,fontWeight:FontWeight.bold,color:fg),maxLines:1),Text(title,style:const TextStyle(fontSize:11,color:Color(0xFF456174)))]);
 }
 class InvoiceForm extends StatefulWidget{
   final List<Patient> patients;
@@ -373,14 +414,11 @@ class _InvoiceFormState extends State<InvoiceForm>{
   late String pid;
   final total=TextEditingController(),paid=TextEditingController();
   @override void initState(){super.initState();pid=widget.patients.first.id;}
-  @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(
-    appBar:AppBar(title:const Text('فاتورة جديدة')),
-    body:ListView(padding:const EdgeInsets.all(16),children:[
-      DropdownButtonFormField(value:pid,decoration:const InputDecoration(labelText:'المريض'),items:widget.patients.map((p)=>DropdownMenuItem(value:p.id,child:Text(p.name))).toList(),onChanged:(v)=>setState(()=>pid=v!)),
-      const SizedBox(height:10),TextField(controller:total,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'الإجمالي')),
-      const SizedBox(height:10),TextField(controller:paid,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'المدفوع')),
-      const SizedBox(height:20),FilledButton(onPressed:(){final t=double.tryParse(total.text)??0,p=double.tryParse(paid.text)??0;Navigator.pop(c,Invoice(id:idNow(),patientId:pid,number:'INV-'+DateTime.now().millisecondsSinceEpoch.toString(),total:t,paid:p,date:dateOnly(DateTime.now()),status:p>=t?'مدفوعة':'جزئية'));},child:const Text('حفظ الفاتورة'))
-    ])
-  ));
+  @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:const Text('فاتورة جديدة')),body:ListView(padding:const EdgeInsets.all(16),children:[
+    DropdownButtonFormField(value:pid,decoration:const InputDecoration(labelText:'المريض'),items:widget.patients.map((p)=>DropdownMenuItem(value:p.id,child:Text(p.name))).toList(),onChanged:(v)=>setState(()=>pid=v!)),
+    const SizedBox(height:12),TextField(controller:total,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'الإجمالي',prefixIcon:Icon(Icons.payments_outlined))),
+    const SizedBox(height:12),TextField(controller:paid,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'المدفوع',prefixIcon:Icon(Icons.account_balance_wallet_outlined))),
+    const SizedBox(height:20),SizedBox(height:50,child:FilledButton.icon(onPressed:(){final t=double.tryParse(total.text.trim())??-1,p=double.tryParse(paid.text.trim())??-1;if(t<=0||p<0||p>t){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تحقق من الإجمالي والمدفوع')));return;}Navigator.pop(c,Invoice(id:idNow(),patientId:pid,number:'INV-'+DateTime.now().millisecondsSinceEpoch.toString(),total:t,paid:p,date:dateOnly(DateTime.now()),status:p>=t?'مدفوعة':'جزئية'));},icon:const Icon(Icons.save),label:const Text('حفظ الفاتورة')))
+  ]));
 }
 class NotificationsPage extends StatelessWidget{const NotificationsPage({super.key});@override Widget build(BuildContext c)=>FutureBuilder<List<AppNotification>>(future:LocalStore.notifications(),builder:(c,s){final n=s.data??[];return ListView(padding:const EdgeInsets.all(16),children:[const Text('مركز الإشعارات',style:TextStyle(fontSize:24,fontWeight:FontWeight.bold)),const SizedBox(height:12),if(n.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(30),child:Center(child:Text('لا توجد إشعارات')))),...n.map((x)=>Card(child:ListTile(leading:Icon(x.channel=='WhatsApp'?Icons.chat:Icons.notifications),title:Text(x.title),subtitle:Text(x.body+'\n'+x.date),isThreeLine:true,trailing:Text(x.status))))]);});}
