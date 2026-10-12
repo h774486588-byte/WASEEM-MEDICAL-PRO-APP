@@ -77,7 +77,6 @@ return new class extends Migration
             $table->date('end_date')->nullable();
             $table->timestampsTz();
             $table->index('patient_id');
-            $table->check('remaining_sessions <= sessions_count');
         });
 
         Schema::create('sessions', function (Blueprint $table): void {
