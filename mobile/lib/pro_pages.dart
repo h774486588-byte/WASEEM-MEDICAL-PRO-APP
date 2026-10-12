@@ -136,18 +136,318 @@ class _InventoryPageState extends State<InventoryPage> {
   ]));
  });
 }
-class StaffPage extends StatefulWidget { const StaffPage({super.key}); @override State<StaffPage> createState()=>_StaffPageState(); }
+class StaffPage extends StatefulWidget {
+ const StaffPage({super.key});
+ @override State<StaffPage> createState()=>_StaffPageState();
+}
 class _StaffPageState extends State<StaffPage> {
  Future<void> _add() async {
-  final name=TextEditingController(),role=TextEditingController(),phone=TextEditingController();
-  final ok=await showDialog<bool>(context:context,builder:(ctx)=>Directionality(textDirection:TextDirection.rtl,child:AlertDialog(title:const Text('إضافة عضو للطاقم'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:name,decoration:const InputDecoration(labelText:'الاسم *')),const SizedBox(height:8),TextField(controller:role,decoration:const InputDecoration(labelText:'التخصص / الوظيفة')),const SizedBox(height:8),TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'رقم الهاتف'))]),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('حفظ'))])));
-  if(ok==true&&name.text.trim().isNotEmpty){final list=await LocalStore.staff();list.add(StaffMember(id:DateTime.now().microsecondsSinceEpoch.toString(),name:name.text.trim(),role:role.text.trim(),phone:phone.text.trim()));await LocalStore.saveStaff(list);if(mounted)setState((){});}
-  name.dispose();role.dispose();phone.dispose();
+  final name=TextEditingController(),role=TextEditingController(),phone=TextEditingController(),salary=TextEditingController(text:'0');
+  final ok=await showDialog<bool>(
+   context:context,
+   builder:(ctx)=>Directionality(
+    textDirection:TextDirection.rtl,
+    child:AlertDialog(
+     title:const Text('إضافة عضو للطاقم'),
+     content:SizedBox(
+      width:420,
+      child:SingleChildScrollView(
+       child:Column(mainAxisSize:MainAxisSize.min,children:[
+        TextField(controller:name,decoration:const InputDecoration(labelText:'الاسم *')),
+        const SizedBox(height:8),
+        TextField(controller:role,decoration:const InputDecoration(labelText:'التخصص / الوظيفة')),
+        const SizedBox(height:8),
+        TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'رقم الهاتف')),
+        const SizedBox(height:8),
+        TextField(controller:salary,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'الراتب الشهري الأساسي')),
+       ]),
+      ),
+     ),
+     actions:[
+      TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),
+      FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('حفظ')),
+     ],
+    ),
+   ),
+  );
+  if(ok==true&&name.text.trim().isNotEmpty){
+   final monthlySalary=salary.text.trim().isEmpty?0:(double.tryParse(salary.text.trim())??-1);
+   if(monthlySalary<0||!monthlySalary.isFinite){
+    if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل راتباً شهرياً صحيحاً غير سالب.')));
+   }else{
+    final list=await LocalStore.staff();
+    list.add(StaffMember(id:DateTime.now().microsecondsSinceEpoch.toString(),name:name.text.trim(),role:role.text.trim(),phone:phone.text.trim(),monthlySalary:monthlySalary));
+    await LocalStore.saveStaff(list);
+    if(mounted)setState((){});
+   }
+  }
+  name.dispose();role.dispose();phone.dispose();salary.dispose();
  }
- Future<void> _delete(StaffMember person)async{final list=await LocalStore.staff();list.removeWhere((x)=>x.id==person.id);await LocalStore.saveStaff(list);if(mounted)setState((){});}
- @override Widget build(BuildContext context)=>FutureBuilder<List<StaffMember>>(future:LocalStore.staff(),builder:(context,s){final list=s.data??[];return ListView(padding:const EdgeInsets.all(16),children:[
-  Row(children:[const Expanded(child:Text('الطاقم الطبي',style:TextStyle(fontSize:23,fontWeight:FontWeight.bold))),IconButton.filled(onPressed:_add,icon:const Icon(Icons.person_add_alt_1))]),
-  const SizedBox(height:12),if(list.isEmpty)const Padding(padding:EdgeInsets.all(24),child:Center(child:Text('لا يوجد أعضاء مسجلون. اضغط + لإضافة الطبيب أو الأخصائي أو الموظف.'))),
-  for(final person in list)Card(margin:const EdgeInsets.only(bottom:8),child:ListTile(leading:const CircleAvatar(child:Icon(Icons.medical_services_outlined)),title:Text(person.name,style:const TextStyle(fontWeight:FontWeight.bold)),subtitle:Text('${person.role.isEmpty?'بدون تخصص محدد':person.role}${person.phone.isEmpty?'':' • '+person.phone}'),trailing:IconButton(onPressed:()=>_delete(person),icon:const Icon(Icons.delete_outline,color:Colors.red))))
- ]);});
+ Future<void> _delete(StaffMember person)async{
+  final confirm=await showDialog<bool>(context:context,builder:(ctx)=>Directionality(textDirection:TextDirection.rtl,child:AlertDialog(
+   title:const Text('حذف عضو الطاقم؟'),
+   content:Text('سيتم حذف ${person.name} من قائمة الطاقم. ستظل سجلات الحضور والرواتب السابقة محفوظة.'),
+   actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('حذف'))],
+  )));
+  if(confirm!=true)return;
+  final list=await LocalStore.staff();list.removeWhere((x)=>x.id==person.id);await LocalStore.saveStaff(list);
+  if(mounted)setState((){});
+ }
+ @override Widget build(BuildContext context)=>FutureBuilder<List<StaffMember>>(future:LocalStore.staff(),builder:(context,s){
+  final list=s.data??[];
+  return ListView(padding:const EdgeInsets.all(16),children:[
+   Row(children:[const Expanded(child:Text('الطاقم الطبي',style:TextStyle(fontSize:23,fontWeight:FontWeight.bold))),IconButton.filled(onPressed:_add,icon:const Icon(Icons.person_add_alt_1))]),
+   const SizedBox(height:12),
+   if(list.isEmpty)const Padding(padding:EdgeInsets.all(24),child:Center(child:Text('لا يوجد أعضاء مسجلون. اضغط + لإضافة الطبيب أو الأخصائي أو الموظف.'))),
+   for(final person in list)Card(margin:const EdgeInsets.only(bottom:8),child:ListTile(
+    leading:const CircleAvatar(child:Icon(Icons.medical_services_outlined)),
+    title:Text(person.name,style:const TextStyle(fontWeight:FontWeight.bold)),
+    subtitle:Text('${person.role.isEmpty?'بدون تخصص محدد':person.role}${person.phone.isEmpty?'':' • '+person.phone}\nالراتب الشهري: ${person.monthlySalary.toStringAsFixed(2)}'),
+    isThreeLine:true,
+    trailing:IconButton(onPressed:()=>_delete(person),icon:const Icon(Icons.delete_outline,color:Colors.red)),
+   )),
+  ]);
+ });
+}
+
+String _financeDate(DateTime d)=>'${d.year.toString().padLeft(4,'0')}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}';
+String _financeMonth(DateTime d)=>'${d.year.toString().padLeft(4,'0')}-${d.month.toString().padLeft(2,'0')}';
+String _financeTime(DateTime d)=>'${d.hour.toString().padLeft(2,'0')}:${d.minute.toString().padLeft(2,'0')}';
+
+class FinancePage extends StatefulWidget {
+ const FinancePage({super.key});
+ @override State<FinancePage> createState()=>_FinancePageState();
+}
+class _FinancePageState extends State<FinancePage> {
+ Future<Map<String,dynamic>> _load() async {
+  final expenses=await LocalStore.expenses();
+  final staff=await LocalStore.staff();
+  final attendance=await LocalStore.attendance();
+  final payroll=await LocalStore.payrollEntries();
+  return {'expenses':expenses,'staff':staff,'attendance':attendance,'payroll':payroll};
+ }
+ Future<void> _addExpense() async {
+  final title=TextEditingController(),amount=TextEditingController(),payee=TextEditingController(),notes=TextEditingController();
+  String category='تشغيل وصيانة',method='نقدي';
+  final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>Directionality(
+   textDirection:TextDirection.rtl,
+   child:AlertDialog(
+    title:const Text('تسجيل مصروف'),
+    content:SizedBox(width:440,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+     TextField(controller:title,decoration:const InputDecoration(labelText:'بيان المصروف *')),
+     const SizedBox(height:8),
+     TextField(controller:amount,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'المبلغ *')),
+     const SizedBox(height:8),
+     DropdownButtonFormField<String>(initialValue:category,decoration:const InputDecoration(labelText:'التصنيف'),items:const[
+      DropdownMenuItem(value:'تشغيل وصيانة',child:Text('تشغيل وصيانة')),
+      DropdownMenuItem(value:'مستلزمات طبية',child:Text('مستلزمات طبية')),
+      DropdownMenuItem(value:'إيجار وفواتير',child:Text('إيجار وفواتير')),
+      DropdownMenuItem(value:'نقل ومواصلات',child:Text('نقل ومواصلات')),
+      DropdownMenuItem(value:'أخرى',child:Text('أخرى')),
+     ],onChanged:(v)=>setDialog(()=>category=v??'أخرى')),
+     const SizedBox(height:8),
+     TextField(controller:payee,decoration:const InputDecoration(labelText:'الجهة المستفيدة (اختياري)')),
+     const SizedBox(height:8),
+     DropdownButtonFormField<String>(initialValue:method,decoration:const InputDecoration(labelText:'طريقة الدفع'),items:const[
+      DropdownMenuItem(value:'نقدي',child:Text('نقدي')),
+      DropdownMenuItem(value:'تحويل بنكي',child:Text('تحويل بنكي')),
+      DropdownMenuItem(value:'محفظة إلكترونية',child:Text('محفظة إلكترونية')),
+     ],onChanged:(v)=>setDialog(()=>method=v??'نقدي')),
+     const SizedBox(height:8),
+     TextField(controller:notes,maxLines:2,decoration:const InputDecoration(labelText:'ملاحظات')),
+    ]))),
+    actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('حفظ المصروف'))],
+   ),
+  )));
+  if(ok==true){
+   final value=double.tryParse(amount.text.trim())??-1;
+   if(title.text.trim().isEmpty||value<=0||!value.isFinite){
+    if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل بياناً ومبلغاً صحيحاً للمصروف.')));
+   }else{
+    final all=await LocalStore.expenses();
+    all.add(ExpenseRecord(id:DateTime.now().microsecondsSinceEpoch.toString(),title:title.text.trim(),category:category,payee:payee.text.trim(),date:_financeDate(DateTime.now()),method:method,amount:value,notes:notes.text.trim()));
+    await LocalStore.saveExpenses(all);
+    if(mounted){setState((){});ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم حفظ المصروف.')));}
+   }
+  }
+  title.dispose();amount.dispose();payee.dispose();notes.dispose();
+ }
+ AttendanceRecord? _attendanceFor(List<AttendanceRecord> all,String staffId,String date){
+  for(final item in all){if(item.staffId==staffId&&item.date==date)return item;}
+  return null;
+ }
+ Future<void> _recordAttendance(StaffMember person,String status) async {
+  final today=_financeDate(DateTime.now());
+  final now=DateTime.now();
+  final all=await LocalStore.attendance();
+  final index=all.indexWhere((x)=>x.staffId==person.id&&x.date==today);
+  final record=AttendanceRecord(id:index>=0?all[index].id:DateTime.now().microsecondsSinceEpoch.toString(),staffId:person.id,staffName:person.name,date:today,status:status,checkIn:(status=='حاضر'||status=='متأخر')?_financeTime(now):'',notes:index>=0?all[index].notes:'');
+  if(index>=0)all[index]=record;else all.add(record);
+  await LocalStore.saveAttendance(all);
+  if(mounted){setState((){});ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تم تحديث حضور ${person.name}: $status')));}
+ }
+ double _usedPayroll(List<PayrollEntry> entries,String staffId,String month){
+  return entries.where((x)=>x.staffId==staffId&&x.month==month&&(x.type=='صرف راتب'||x.type=='خصم')).fold<double>(0,(sum,x)=>sum+x.amount);
+ }
+ Future<void> _recordPayroll(StaffMember person) async {
+  if(person.monthlySalary<=0){
+   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('حدّد الراتب الشهري للموظف من شاشة الطاقم الطبي أولاً.')));
+   return;
+  }
+  final month=_financeMonth(DateTime.now());
+  final before=await LocalStore.payrollEntries();
+  final dueBefore=(person.monthlySalary-_usedPayroll(before,person.id,month)).clamp(0.0,person.monthlySalary).toDouble();
+  if(dueBefore<=0){
+   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم تسوية راتب هذا الشهر بالكامل.')));
+   return;
+  }
+  final amount=TextEditingController(),notes=TextEditingController();
+  String type='صرف راتب',method='نقدي';
+  final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>Directionality(
+   textDirection:TextDirection.rtl,
+   child:AlertDialog(
+    title:Text('حركة راتب • ${person.name}'),
+    content:SizedBox(width:420,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+     Text('المتبقي من راتب الشهر: ${dueBefore.toStringAsFixed(2)}'),
+     const SizedBox(height:8),
+     DropdownButtonFormField<String>(initialValue:type,decoration:const InputDecoration(labelText:'نوع الحركة'),items:const[
+      DropdownMenuItem(value:'صرف راتب',child:Text('صرف راتب')),
+      DropdownMenuItem(value:'خصم',child:Text('خصم من الراتب')),
+     ],onChanged:(v)=>setDialog(()=>type=v??'صرف راتب')),
+     const SizedBox(height:8),
+     TextField(controller:amount,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'المبلغ *')),
+     const SizedBox(height:8),
+     DropdownButtonFormField<String>(initialValue:method,decoration:const InputDecoration(labelText:'طريقة الدفع'),items:const[
+      DropdownMenuItem(value:'نقدي',child:Text('نقدي')),
+      DropdownMenuItem(value:'تحويل بنكي',child:Text('تحويل بنكي')),
+      DropdownMenuItem(value:'محفظة إلكترونية',child:Text('محفظة إلكترونية')),
+     ],onChanged:(v)=>setDialog(()=>method=v??'نقدي')),
+     const SizedBox(height:8),
+     TextField(controller:notes,maxLines:2,decoration:const InputDecoration(labelText:'ملاحظات')),
+    ]))),
+    actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('حفظ الحركة'))],
+   ),
+  )));
+  if(ok==true){
+   final value=double.tryParse(amount.text.trim())??-1;
+   final latest=await LocalStore.payrollEntries();
+   final due=(person.monthlySalary-_usedPayroll(latest,person.id,month)).clamp(0.0,person.monthlySalary).toDouble();
+   if(value<=0||!value.isFinite||value>due){
+    if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تحقق من المبلغ؛ لا يمكن أن يتجاوز المتبقي من الراتب.')));
+   }else{
+    latest.add(PayrollEntry(id:DateTime.now().microsecondsSinceEpoch.toString(),staffId:person.id,staffName:person.name,type:type,month:month,date:_financeDate(DateTime.now()),method:method,amount:value,notes:notes.text.trim()));
+    await LocalStore.savePayrollEntries(latest);
+    if(mounted){setState((){});ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم حفظ حركة الراتب.')));}
+   }
+  }
+  amount.dispose();notes.dispose();
+ }
+ Future<void> _showPayrollHistory(StaffMember person) async {
+  final all=await LocalStore.payrollEntries();
+  final history=all.where((x)=>x.staffId==person.id).toList()..sort((a,b)=>b.date.compareTo(a.date));
+  if(!mounted)return;
+  await showDialog<void>(context:context,builder:(ctx)=>Directionality(textDirection:TextDirection.rtl,child:AlertDialog(
+   title:Text('سجل الرواتب • ${person.name}'),
+   content:SizedBox(width:440,child:history.isEmpty?const Text('لا توجد حركات رواتب مسجلة.'):ConstrainedBox(
+    constraints:const BoxConstraints(maxHeight:420),
+    child:ListView(shrinkWrap:true,children:[
+     for(final item in history)ListTile(
+      leading:Icon(item.type=='خصم'?Icons.remove_circle_outline:Icons.payments_outlined,color:item.type=='خصم'?Colors.red:Colors.green),
+      title:Text('${item.type}: ${item.amount.toStringAsFixed(2)}'),
+      subtitle:Text('${item.month} • ${item.date} • ${item.method}${item.notes.isEmpty?'':'\n'+item.notes}'),
+     ),
+    ]),
+   )),
+   actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('إغلاق'))],
+  )));
+ }
+ @override Widget build(BuildContext context)=>FutureBuilder<Map<String,dynamic>>(future:_load(),builder:(context,s){
+  if(!s.hasData)return const Center(child:CircularProgressIndicator());
+  final expenses=s.data!['expenses'] as List<ExpenseRecord>;
+  final staff=s.data!['staff'] as List<StaffMember>;
+  final attendance=s.data!['attendance'] as List<AttendanceRecord>;
+  final payroll=s.data!['payroll'] as List<PayrollEntry>;
+  final today=_financeDate(DateTime.now()),month=_financeMonth(DateTime.now());
+  final expenseTotal=expenses.fold<double>(0,(sum,x)=>sum+x.amount);
+  final monthPayroll=payroll.where((x)=>x.month==month).toList();
+  final monthPaid=monthPayroll.where((x)=>x.type=='صرف راتب').fold<double>(0,(sum,x)=>sum+x.amount);
+  final monthDeductions=monthPayroll.where((x)=>x.type=='خصم').fold<double>(0,(sum,x)=>sum+x.amount);
+  return DefaultTabController(length:3,child:Column(children:[
+   const Material(color:Color(0xFF0869B9),child:TabBar(isScrollable:true,labelColor:Colors.white,unselectedLabelColor:Colors.white70,indicatorColor:Colors.white,tabs:[
+    Tab(icon:Icon(Icons.money_off_csred_outlined),text:'المصروفات'),
+    Tab(icon:Icon(Icons.fact_check_outlined),text:'الحضور'),
+    Tab(icon:Icon(Icons.payments_outlined),text:'الرواتب والخصومات'),
+   ])),
+   Expanded(child:TabBarView(children:[
+    ListView(padding:const EdgeInsets.all(16),children:[
+     Row(children:[const Expanded(child:Text('سجل المصروفات',style:TextStyle(fontSize:22,fontWeight:FontWeight.bold))),IconButton.filled(onPressed:_addExpense,icon:const Icon(Icons.add))]),
+     Card(child:ListTile(leading:const Icon(Icons.account_balance_wallet_outlined),title:const Text('إجمالي المصروفات المسجلة'),subtitle:Text('${expenses.length} حركة'),trailing:Text(expenseTotal.toStringAsFixed(2),style:const TextStyle(fontWeight:FontWeight.bold,fontSize:18)))),
+     const SizedBox(height:10),
+     if(expenses.isEmpty)const Padding(padding:EdgeInsets.all(24),child:Center(child:Text('لا توجد مصروفات مسجلة.'))),
+     for(final item in expenses.reversed)Card(margin:const EdgeInsets.only(bottom:8),child:ListTile(
+      leading:const CircleAvatar(child:Icon(Icons.receipt_long_outlined)),
+      title:Text(item.title,style:const TextStyle(fontWeight:FontWeight.bold)),
+      subtitle:Text('${item.category} • ${item.date} • ${item.method}${item.payee.isEmpty?'':'\nالمستفيد: '+item.payee}${item.notes.isEmpty?'':'\n'+item.notes}'),
+      isThreeLine:true,
+      trailing:Text(item.amount.toStringAsFixed(2),style:const TextStyle(fontWeight:FontWeight.bold,color:Colors.red)),
+     )),
+    ]),
+    ListView(padding:const EdgeInsets.all(16),children:[
+     Row(children:[const Expanded(child:Text('حضور الطاقم',style:TextStyle(fontSize:22,fontWeight:FontWeight.bold))),Text(today,style:const TextStyle(color:Colors.black54))]),
+     const SizedBox(height:10),
+     if(staff.isEmpty)const Padding(padding:EdgeInsets.all(24),child:Center(child:Text('أضف أعضاء الطاقم أولاً لتسجيل الحضور.'))),
+     for(final person in staff)
+      Builder(builder:(ctx){
+       final record=_attendanceFor(attendance,person.id,today);
+       return Card(margin:const EdgeInsets.only(bottom:8),child:ListTile(
+        leading:CircleAvatar(child:Icon(record?.status=='غائب'?Icons.person_off_outlined:Icons.person_outline)),
+        title:Text(person.name,style:const TextStyle(fontWeight:FontWeight.bold)),
+        subtitle:Text('${person.role.isEmpty?'بدون تخصص':person.role} • ${record?.status??'لم يسجل بعد'}${record==null||record.checkIn.isEmpty?'':' • '+record.checkIn}'),
+        trailing:PopupMenuButton<String>(
+         tooltip:'تسجيل الحالة',
+         onSelected:(v)=>_recordAttendance(person,v),
+         itemBuilder:(_)=>const[
+          PopupMenuItem(value:'حاضر',child:Text('حاضر')),
+          PopupMenuItem(value:'متأخر',child:Text('متأخر')),
+          PopupMenuItem(value:'غائب',child:Text('غائب')),
+          PopupMenuItem(value:'إجازة',child:Text('إجازة')),
+         ],
+         icon:const Icon(Icons.edit_calendar_outlined),
+        ),
+       ));
+      }),
+    ]),
+    ListView(padding:const EdgeInsets.all(16),children:[
+     Row(children:[const Expanded(child:Text('الرواتب والخصومات',style:TextStyle(fontSize:22,fontWeight:FontWeight.bold))),Text(month,style:const TextStyle(color:Colors.black54))]),
+     Card(child:ListTile(leading:const Icon(Icons.payments_outlined),title:const Text('ملخص الحركات لهذا الشهر'),subtitle:Text('صرف: ${monthPaid.toStringAsFixed(2)} • خصومات: ${monthDeductions.toStringAsFixed(2)}'),trailing:Text((monthPaid+monthDeductions).toStringAsFixed(2),style:const TextStyle(fontWeight:FontWeight.bold)))),
+     const SizedBox(height:10),
+     if(staff.isEmpty)const Padding(padding:EdgeInsets.all(24),child:Center(child:Text('أضف أعضاء الطاقم وحدّد رواتبهم الشهرية أولاً.'))),
+     for(final person in staff)
+      Builder(builder:(ctx){
+       final entries=payroll.where((x)=>x.staffId==person.id&&x.month==month).toList();
+       final paid=entries.where((x)=>x.type=='صرف راتب').fold<double>(0,(sum,x)=>sum+x.amount);
+       final deductions=entries.where((x)=>x.type=='خصم').fold<double>(0,(sum,x)=>sum+x.amount);
+       final due=(person.monthlySalary-paid-deductions).clamp(0.0,person.monthlySalary).toDouble();
+       return Card(margin:const EdgeInsets.only(bottom:10),child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Text(person.name,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:17)),
+        Text(person.role.isEmpty?'موظف':'${person.role}',style:const TextStyle(color:Colors.black54)),
+        const SizedBox(height:8),
+        Wrap(spacing:14,runSpacing:6,children:[
+         Text('الراتب: ${person.monthlySalary.toStringAsFixed(2)}'),
+         Text('المصروف: ${paid.toStringAsFixed(2)}'),
+         Text('الخصم: ${deductions.toStringAsFixed(2)}'),
+         Text('المتبقي: ${due.toStringAsFixed(2)}',style:TextStyle(fontWeight:FontWeight.bold,color:due<=0?Colors.green:Colors.orange)),
+        ]),
+        const SizedBox(height:8),
+        Row(mainAxisAlignment:MainAxisAlignment.end,children:[
+         TextButton.icon(onPressed:()=>_showPayrollHistory(person),icon:const Icon(Icons.history),label:const Text('السجل')),
+         const SizedBox(width:8),
+         FilledButton.tonalIcon(onPressed:person.monthlySalary>0&&due>0?()=>_recordPayroll(person):null,icon:const Icon(Icons.add_card),label:const Text('صرف / خصم')),
+        ]),
+       ])));
+      }),
+    ]),
+   ])),
+  ]));
+ });
 }
