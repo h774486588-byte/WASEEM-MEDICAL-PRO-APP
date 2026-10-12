@@ -533,7 +533,9 @@ class _NotificationsPageState extends State<NotificationsPage>{
     }
     Uri target;
     if(item.channel=='WhatsApp'){
-      final digits=phone.replaceAll(RegExp(r'[^0-9]'),'').replaceFirst(RegExp(r'^00'),'');
+      var digits=phone.replaceAll(RegExp(r'[^0-9]'),'').replaceFirst(RegExp(r'^00'),'');
+      if(digits.startsWith('0')&&digits.length==10)digits=digits.substring(1);
+      if(digits.length==9&&digits.startsWith('7'))digits='967'+digits;
       if(digits.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('رقم الهاتف غير صالح لفتح WhatsApp.')));return;}
       target=Uri.parse('https://wa.me/$digits?text=${Uri.encodeComponent(item.body)}');
     } else if(item.channel=='SMS'){
