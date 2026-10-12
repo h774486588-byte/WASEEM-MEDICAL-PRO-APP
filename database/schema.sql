@@ -137,6 +137,53 @@ CREATE TABLE IF NOT EXISTS services (
   duration_minutes INTEGER, is_active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(branch_id,name)
 );
+CREATE TABLE IF NOT EXISTS medical_staff (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
+  full_name VARCHAR(200) NOT NULL,
+  role VARCHAR(80) NOT NULL,
+  specialty VARCHAR(150),
+  phone VARCHAR(40),
+  email VARCHAR(200),
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_medical_staff_branch ON medical_staff(branch_id);
+
+CREATE TABLE IF NOT EXISTS inventory_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
+  sku VARCHAR(100),
+  barcode VARCHAR(150),
+  name VARCHAR(200) NOT NULL,
+  category VARCHAR(120),
+  unit VARCHAR(40) NOT NULL DEFAULT 'piece',
+  quantity NUMERIC(14,3) NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+  reorder_level NUMERIC(14,3) NOT NULL DEFAULT 0 CHECK (reorder_level >= 0),
+  unit_cost NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (unit_cost >= 0),
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(branch_id, sku),
+  UNIQUE(branch_id, barcode)
+);
+CREATE INDEX IF NOT EXISTS idx_inventory_items_name ON inventory_items(name);
+CREATE INDEX IF NOT EXISTS idx_inventory_items_barcode ON inventory_items(barcode);
+
+CREATE TABLE IF NOT EXISTS stock_movements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  item_id UUID NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
+  movement_type VARCHAR(20) NOT NULL CHECK (movement_type IN ('opening','purchase','dispense','adjustment','return')),
+  quantity NUMERIC(14,3) NOT NULL CHECK (quantity > 0),
+  unit_cost NUMERIC(14,2) NOT NULL DEFAULT 0,
+  reference VARCHAR(150),
+  notes TEXT,
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_item_date ON stock_movements(item_id, created_at);
+
 CREATE TABLE IF NOT EXISTS invoice_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(), invoice_id UUID NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
   service_id UUID REFERENCES services(id) ON DELETE SET NULL, description VARCHAR(300) NOT NULL,
