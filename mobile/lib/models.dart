@@ -62,3 +62,10 @@ class InventorySale {
  Map<String,dynamic> toJson()=>{'id':id,'itemId':itemId,'itemName':itemName,'date':date,'quantity':quantity,'unitPrice':unitPrice,'total':total,'costTotal':costTotal};
  factory InventorySale.fromJson(Map<String,dynamic> j)=>InventorySale(id:j['id']??'',itemId:j['itemId']??'',itemName:j['itemName']??'',date:j['date']??'',quantity:(j['quantity'] as num?)?.toDouble()??0,unitPrice:(j['unitPrice'] as num?)?.toDouble()??0,total:(j['total'] as num?)?.toDouble()??0,costTotal:(j['costTotal'] as num?)?.toDouble()??0);
 }
+
+class SessionRecord {
+  final String id,patientId,packageId,packageName,date,time,therapist,status,notes;
+  const SessionRecord({required this.id,required this.patientId,required this.packageId,required this.packageName,required this.date,required this.time,required this.therapist,this.status='حضر',this.notes=''});
+  Map<String,dynamic> toJson()=>{'id':id,'patientId':patientId,'packageId':packageId,'packageName':packageName,'date':date,'time':time,'therapist':therapist,'status':status,'notes':notes};
+  factory SessionRecord.fromJson(Map<String,dynamic> j)=>SessionRecord(id:j['id']??'',patientId:j['patientId']??'',packageId:j['packageId']??'',packageName:j['packageName']??'',date:j['date']??'',time:j['time']??'',therapist:j['therapist']??'',status:j['status']??'حضر',notes:j['notes']??'');
+}
