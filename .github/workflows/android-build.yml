@@ -27,6 +27,10 @@ jobs:
         working-directory: mobile
         run: flutter create --platforms=android --project-name=waseem_medical_pro .
 
+      - name: Remove generated placeholder test
+        working-directory: mobile
+        run: rm -f test/widget_test.dart
+
       - name: Get dependencies
         working-directory: mobile
         run: flutter pub get
