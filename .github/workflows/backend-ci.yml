@@ -5,6 +5,7 @@ on:
     branches: [main, work/backend-api-foundation]
     paths:
       - 'backend/**'
+      - 'database/schema.sql'
       - '.github/workflows/backend-ci.yml'
   pull_request:
     paths:
@@ -76,3 +77,8 @@ jobs:
 
       - name: Run feature tests
         run: php artisan test
+
+      - name: Validate standalone PostgreSQL schema
+        run: |
+          PGPASSWORD="$DB_PASSWORD" createdb -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" waseem_schema_test
+          PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" -d waseem_schema_test -v ON_ERROR_STOP=1 -f ../database/schema.sql
