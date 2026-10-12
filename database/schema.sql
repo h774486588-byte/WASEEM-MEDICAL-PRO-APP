@@ -177,11 +177,42 @@ CREATE TABLE IF NOT EXISTS medical_staff (
   specialty VARCHAR(150),
   phone VARCHAR(40),
   email VARCHAR(200),
+  monthly_salary NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (monthly_salary >= 0),
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_medical_staff_branch ON medical_staff(branch_id);
+
+CREATE TABLE IF NOT EXISTS attendance_records (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  staff_id UUID NOT NULL REFERENCES medical_staff(id) ON DELETE CASCADE,
+  attendance_date DATE NOT NULL,
+  status VARCHAR(30) NOT NULL CHECK (status IN ('present','late','absent','leave')),
+  check_in TIME,
+  notes TEXT,
+  recorded_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(staff_id, attendance_date)
+);
+CREATE INDEX IF NOT EXISTS idx_attendance_records_date ON attendance_records(attendance_date);
+
+CREATE TABLE IF NOT EXISTS payroll_entries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  staff_id UUID NOT NULL REFERENCES medical_staff(id) ON DELETE CASCADE,
+  entry_type VARCHAR(30) NOT NULL CHECK (entry_type IN ('salary_payment','deduction')),
+  month CHAR(7) NOT NULL,
+  amount NUMERIC(14,2) NOT NULL CHECK (amount > 0),
+  method VARCHAR(30) NOT NULL DEFAULT 'cash',
+  paid_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  notes TEXT,
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_payroll_entries_staff_month ON payroll_entries(staff_id, month);
+CREATE INDEX IF NOT EXISTS idx_payroll_entries_paid_at ON payroll_entries(paid_at);
 
 CREATE TABLE IF NOT EXISTS inventory_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
