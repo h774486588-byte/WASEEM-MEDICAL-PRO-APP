@@ -246,7 +246,12 @@ class _PatientsPageState extends State<PatientsPage>{
     final settings=await LocalStore.settings();
     final channel=r.notificationChannel;
     final message='مرحباً بك في '+(settings['name']??'مركز وسيم الطبي')+' 🌷\nتم تسجيل ملفك بنجاح.\nرقم الملف: '+r.fileNo+'\nنتمنى لك دوام الصحة والعافية.\n'+(settings['name']??'مركز وسيم الطبي')+'\n'+(settings['phone']??'');
-    if(channel!='بدون') ns.insert(0,AppNotification(id:idNow(),title:'تسجيل مريض جديد',body:message,channel:channel,status:channel=='النظام'?'تم التسجيل':'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:r.phone));
+    if(channel=='WhatsApp وSMS'){
+      ns.insert(0,AppNotification(id:idNow(),title:'تسجيل مريض جديد • SMS',body:message,channel:'SMS',status:'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:r.phone));
+      ns.insert(0,AppNotification(id:idNow(),title:'تسجيل مريض جديد • WhatsApp',body:message,channel:'WhatsApp',status:'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:r.phone));
+    } else if(channel!='بدون') {
+      ns.insert(0,AppNotification(id:idNow(),title:'تسجيل مريض جديد',body:message,channel:channel,status:channel=='النظام'?'تم التسجيل':'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:r.phone));
+    }
     await LocalStore.saveNotifications(ns);
     setState((){});widget.changed();
   }
@@ -292,7 +297,7 @@ class _PatientsPageState extends State<PatientsPage>{
 class PatientForm extends StatefulWidget{const PatientForm({super.key});@override State<PatientForm> createState()=>_PatientFormState();}
 class _PatientFormState extends State<PatientForm>{
   final name=TextEditingController(),phone=TextEditingController(),alternate=TextEditingController(),national=TextEditingController(),ageController=TextEditingController(),service=TextEditingController(),doctor=TextEditingController(),address=TextEditingController(),notes=TextEditingController();
-  String gender='ذكر',department='العلاج الطبيعي',channel='النظام'; DateTime? birth;
+  String gender='ذكر',department='العلاج الطبيعي',channel='WhatsApp وSMS'; DateTime? birth;
   Future<void> pickBirth()async{final d=await showDatePicker(context:context,initialDate:DateTime(2000),firstDate:DateTime(1900),lastDate:DateTime.now());if(d!=null)setState(()=>birth=d);}
   Future<void> save()async{if(name.text.trim().isEmpty||phone.text.trim().isEmpty||ageController.text.trim().isEmpty||(int.tryParse(ageController.text.trim())??-1)<0){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل اسم المريض ورقم الهاتف والعمر الصحيح')));return;}final n=await LocalStore.nextPatientNumber();final extra=alternate.text.trim().isEmpty?'':'هاتف بديل: '+alternate.text.trim();final note=notes.text.trim();final p=Patient(id:idNow(),fileNo:'P-'+n.toString(),name:name.text.trim(),phone:phone.text.trim(),nationalId:national.text.trim(),birthDate:birth==null?'':dateOnly(birth!),age:int.tryParse(ageController.text.trim())??0,gender:gender,department:department,service:service.text.trim(),doctor:doctor.text.trim(),address:address.text.trim(),notes:extra+(extra.isNotEmpty&&note.isNotEmpty?'\n':'')+note,notificationChannel:channel,createdAt:dateOnly(DateTime.now()));Navigator.pop(context,p);}
   @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:const Text('تسجيل مريض جديد')),body:ListView(padding:const EdgeInsets.all(16),children:[
@@ -307,7 +312,7 @@ class _PatientFormState extends State<PatientForm>{
     TextField(controller:service,decoration:const InputDecoration(labelText:'الخدمة / الشكوى',prefixIcon:Icon(Icons.medical_services_outlined))),const SizedBox(height:10),
     TextField(controller:doctor,decoration:const InputDecoration(labelText:'الطبيب / الأخصائي',prefixIcon:Icon(Icons.person_search_outlined))),const SizedBox(height:10),
     TextField(controller:address,decoration:const InputDecoration(labelText:'العنوان',prefixIcon:Icon(Icons.location_on_outlined))),const SizedBox(height:10),
-    DropdownButtonFormField(value:channel,decoration:const InputDecoration(labelText:'قناة إشعار التسجيل'),items:['النظام','WhatsApp','SMS','بدون'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setState(()=>channel=v!)),const SizedBox(height:10),
+    DropdownButtonFormField(value:channel,decoration:const InputDecoration(labelText:'قناة إشعار التسجيل'),items:['WhatsApp وSMS','WhatsApp','SMS','النظام','بدون'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setState(()=>channel=v!)),const SizedBox(height:10),
     TextField(controller:notes,maxLines:3,decoration:const InputDecoration(labelText:'ملاحظات')),const SizedBox(height:20),
     SizedBox(height:50,child:FilledButton.icon(onPressed:save,icon:const Icon(Icons.save),label:const Text('حفظ الملف')))
   ])));
@@ -339,7 +344,10 @@ class _AppointmentsPageState extends State<AppointmentsPage>{
     if(r==null)return;
     final l=await LocalStore.appointments();l.add(r);await LocalStore.saveAppointments(l);
     final ns=await LocalStore.notifications();
-    ns.insert(0,AppNotification(id:idNow(),title:'موعد جديد',body:'تم حجز موعد للمريض في '+r.date+' الساعة '+r.time,channel:'النظام',status:'جاهز',date:dateOnly(DateTime.now())));
+    final patient=ps.firstWhere((p)=>p.id==r.patientId);
+    final message='مرحباً '+patient.name+'، تم حجز موعدك بتاريخ '+r.date+' الساعة '+r.time+'. المختص: '+(r.doctor.isEmpty?'سيتم تحديده لاحقاً':r.doctor)+'. نرجو الحضور في الموعد المحدد.';
+    ns.insert(0,AppNotification(id:idNow(),title:'موعد جديد • SMS',body:message,channel:'SMS',status:'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:patient.phone));
+    ns.insert(0,AppNotification(id:idNow(),title:'موعد جديد • WhatsApp',body:message,channel:'WhatsApp',status:'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:patient.phone));
     await LocalStore.saveNotifications(ns);
     setState((){});widget.changed();
   }
@@ -412,7 +420,18 @@ class _PackagesPageState extends State<PackagesPage>{
     list[i]=PackageRecord(id:item.id,patientId:item.patientId,name:item.name,price:item.price,paid:item.paid,sessions:item.sessions,remaining:left,startDate:item.startDate,endDate:item.endDate);
     await LocalStore.savePackages(list);
     final ns=await LocalStore.notifications();
-    if(left<=2){ns.insert(0,AppNotification(id:idNow(),title:left==0?'انتهاء الباقة':'تنبيه قرب انتهاء الباقة',body:left==0?'انتهت جميع جلسات باقة '+item.name:'تبقى '+left.toString()+' جلسة من باقة '+item.name,channel:'النظام',status:'جاهز',date:dateOnly(DateTime.now())));await LocalStore.saveNotifications(ns);}
+    final patients=await LocalStore.patients();
+    final patient=patients.where((p)=>p.id==item.patientId).firstOrNull;
+    if(patient!=null){
+      final message='مرحباً '+patient.name+'، تم تسجيل حضور جلستك العلاجية وخصم جلسة واحدة من باقة '+item.name+'. الجلسات المتبقية: '+left.toString()+' من '+item.sessions.toString()+'.';
+      ns.insert(0,AppNotification(id:idNow(),title:'خصم جلسة • SMS',body:message,channel:'SMS',status:'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:patient.phone));
+      ns.insert(0,AppNotification(id:idNow(),title:'خصم جلسة • WhatsApp',body:message,channel:'WhatsApp',status:'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:patient.phone));
+      if(left<=2){
+        final alert=left==0?'انتهت جميع جلسات باقة '+item.name:'تنبيه: تبقى '+left.toString()+' جلسة من باقة '+item.name;
+        ns.insert(0,AppNotification(id:idNow(),title:'تنبيه رصيد الباقة',body:alert,channel:'النظام',status:'جاهز',date:dateOnly(DateTime.now()),recipientPhone:patient.phone));
+      }
+    }
+    await LocalStore.saveNotifications(ns);
     setState((){}); widget.changed();
     if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تم تسجيل الجلسة • المتبقي '+left.toString())));
   }
