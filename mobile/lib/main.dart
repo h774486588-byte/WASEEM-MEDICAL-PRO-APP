@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'models.dart';
 import 'storage.dart';
@@ -29,13 +30,25 @@ class WaseemMedicalPro extends StatelessWidget{
 class LoginPage extends StatefulWidget{const LoginPage({super.key});@override State<LoginPage> createState()=>_LoginPageState();}
 class _LoginPageState extends State<LoginPage>{
   final user=TextEditingController(),pass=TextEditingController();
-  @override Widget build(BuildContext context)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(body:Center(child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:430),child:Column(children:[
+  bool rememberDevice=true,checkingSavedSession=true,openingDashboard=false;
+  @override void initState(){super.initState();_restoreTrustedDevice();}
+  Future<void> _restoreTrustedDevice() async {
+    final prefs=await SharedPreferences.getInstance();
+    if(prefs.getBool('waseem_trusted_device')==true&&mounted){
+      setState(()=>openingDashboard=true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if(mounted)Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>const Dashboard()));
+      });
+    } else if(mounted) setState(()=>checkingSavedSession=false);
+  }
+  @override Widget build(BuildContext context)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(body:checkingSavedSession||openingDashboard?const Center(child:CircularProgressIndicator()):Center(child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:430),child:Column(children:[
     Icon(Icons.local_hospital,size:78,color:Color(0xFF1565C0)),
     SizedBox(height:12),Text('نظام وسيم الطبي PRO',style:TextStyle(fontSize:27,fontWeight:FontWeight.bold)),SizedBox(height:6),
     Text('إدارة مركزك الطبي باحترافية'),SizedBox(height:28),
     TextField(controller:user,decoration:InputDecoration(labelText:'اسم المستخدم',prefixIcon:Icon(Icons.person_outline))),
     SizedBox(height:12),TextField(controller:pass,obscureText:true,decoration:InputDecoration(labelText:'كلمة المرور',prefixIcon:Icon(Icons.lock_outline))),
-    SizedBox(height:20),SizedBox(width:double.infinity,height:52,child:FilledButton(onPressed:(){if(user.text.trim()!='admin'||pass.text!='1234'){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('بيانات الدخول غير صحيحة')));return;}Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>const Dashboard()));},child:Text('دخول')))
+    CheckboxListTile(value:rememberDevice,contentPadding:EdgeInsets.zero,controlAffinity:ListTileControlAffinity.leading,title:const Text('تذكر هذا الجهاز للدخول لاحقاً'),subtitle:const Text('لا تحفظ كلمة المرور نفسها؛ يتم حفظ حالة الوثوق بالجهاز فقط.'),onChanged:(v)=>setState(()=>rememberDevice=v??false)),
+    SizedBox(height:12),SizedBox(width:double.infinity,height:52,child:FilledButton(onPressed:()async{if(user.text.trim()!='admin'||pass.text!='1234'){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('بيانات الدخول غير صحيحة')));return;}final prefs=await SharedPreferences.getInstance();await prefs.setBool('waseem_trusted_device',rememberDevice);if(mounted)Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>const Dashboard()));},child:Text('دخول')))
   ]))))));
 }
 
