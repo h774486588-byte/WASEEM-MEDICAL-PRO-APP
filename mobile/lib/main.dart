@@ -345,7 +345,7 @@ class _PackagesPageState extends State<PackagesPage>{
           ClipRRect(borderRadius:BorderRadius.circular(8),child:LinearProgressIndicator(value:x.sessions<=0?0:x.remaining/x.sessions,minHeight:8,backgroundColor:const Color(0xFFE8EEF5))),
           const SizedBox(height:8),
           Row(children:[Expanded(child:Text('المتبقي '+x.remaining.toString()+' من '+x.sessions.toString()+' جلسة',style:const TextStyle(fontSize:12,color:Colors.black54))),FilledButton.tonalIcon(onPressed:()=>registerSession(x),icon:const Icon(Icons.check_circle_outline),label:const Text('تسجيل جلسة'))])
-        ])))
+         ]))))
       ]))
     ]);
   });
