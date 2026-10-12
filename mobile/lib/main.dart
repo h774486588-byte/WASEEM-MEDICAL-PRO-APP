@@ -632,7 +632,19 @@ class _NotificationsPageState extends State<NotificationsPage>{
     }
     try {
       final opened=await launchUrl(target,mode:LaunchMode.externalApplication);
-      if(!opened&&mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تعذر فتح تطبيق الإرسال. تحقق من تثبيت WhatsApp أو تطبيق الرسائل.')));
+      if(opened){
+        final current=await LocalStore.notifications();
+        final index=current.indexWhere((n)=>n.id==item.id);
+        if(index>=0){
+          final old=current[index];
+          current[index]=AppNotification(id:old.id,title:old.title,body:old.body,channel:old.channel,status:'تم فتح التطبيق - بانتظار تأكيد الإرسال',date:old.date,recipientPhone:old.recipientPhone);
+          await LocalStore.saveNotifications(current);
+        }
+        if(mounted){
+          setState((){});
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم فتح تطبيق الإرسال. أكمل إرسال الرسالة من التطبيق؛ لم يتم تأكيد التسليم تلقائياً.')));
+        }
+      } else if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تعذر فتح تطبيق الإرسال. تحقق من تثبيت WhatsApp أو تطبيق الرسائل.')));
     } catch(e) {
       if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر فتح تطبيق الإرسال: $e')));
     }
