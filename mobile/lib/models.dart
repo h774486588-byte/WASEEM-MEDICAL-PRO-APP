@@ -27,6 +27,41 @@ class Invoice {
   Map<String,dynamic> toJson()=>{'id':id,'patientId':patientId,'number':number,'total':total,'paid':paid,'date':date,'status':status};
   factory Invoice.fromJson(Map<String,dynamic> j)=>Invoice(id:j['id']??'',patientId:j['patientId']??'',number:j['number']??'',total:(j['total'] as num?)?.toDouble()??0,paid:(j['paid'] as num?)?.toDouble()??0,date:j['date']??'',status:j['status']??'غير مدفوعة');
 }
+class PaymentRecord {
+  final String id, invoiceId, patientId, method, date, notes;
+  final double amount;
+
+  const PaymentRecord({
+    required this.id,
+    required this.invoiceId,
+    required this.patientId,
+    required this.amount,
+    required this.method,
+    required this.date,
+    this.notes = '',
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'invoiceId': invoiceId,
+    'patientId': patientId,
+    'amount': amount,
+    'method': method,
+    'date': date,
+    'notes': notes,
+  };
+
+  factory PaymentRecord.fromJson(Map<String, dynamic> json) => PaymentRecord(
+    id: json['id']?.toString() ?? '',
+    invoiceId: json['invoiceId']?.toString() ?? '',
+    patientId: json['patientId']?.toString() ?? '',
+    amount: (json['amount'] as num?)?.toDouble() ?? 0,
+    method: json['method']?.toString() ?? 'نقدي',
+    date: json['date']?.toString() ?? '',
+    notes: json['notes']?.toString() ?? '',
+  );
+}
+
 class AppNotification {
   final String id,title,body,channel,status,date,recipientPhone;
   const AppNotification({required this.id,required this.title,required this.body,required this.channel,required this.status,required this.date,this.recipientPhone=''});
