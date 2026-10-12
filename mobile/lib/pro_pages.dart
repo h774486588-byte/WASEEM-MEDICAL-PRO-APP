@@ -4,10 +4,72 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'storage.dart';
 import 'models.dart';
-class ReportsPage extends StatelessWidget{
+class ReportsPage extends StatelessWidget {
  const ReportsPage({super.key});
- Future<Map<String,num>> data()async{final p=await LocalStore.patients(),a=await LocalStore.appointments(),g=await LocalStore.packages(),i=await LocalStore.invoices();return {'patients':p.length,'appointments':a.length,'packages':g.length,'sessions':g.fold<num>(0,(s,x)=>s+x.sessions-x.remaining),'revenue':i.fold<num>(0,(s,x)=>s+x.paid),'outstanding':i.fold<num>(0,(s,x)=>s+x.remaining)};}
- @override Widget build(BuildContext c)=>FutureBuilder<Map<String,num>>(future:data(),builder:(c,s){final d=s.data??{};return ListView(padding:const EdgeInsets.all(16),children:[const Text('التقارير',style:TextStyle(fontSize:24,fontWeight:FontWeight.bold)),const SizedBox(height:14),_R('إجمالي المرضى',(d['patients']??0).toString(),Icons.people),_R('إجمالي المواعيد',(d['appointments']??0).toString(),Icons.event),_R('الباقات',(d['packages']??0).toString(),Icons.inventory_2),_R('الجلسات المنفذة',(d['sessions']??0).toString(),Icons.medical_services),_R('إجمالي المدفوع',(d['revenue']??0).toStringAsFixed(0),Icons.payments),_R('إجمالي المتبقي',(d['outstanding']??0).toStringAsFixed(0),Icons.account_balance_wallet)]);});
+
+ Future<Map<String, num>> data() async {
+  final patients = await LocalStore.patients();
+  final appointments = await LocalStore.appointments();
+  final packages = await LocalStore.packages();
+  final invoices = await LocalStore.invoices();
+  final expenses = await LocalStore.expenses();
+  final payroll = await LocalStore.payrollEntries();
+  final sales = await LocalStore.sales();
+  final invoiceRevenue = invoices.fold<double>(0, (sum, item) => sum + item.paid);
+  final stockRevenue = sales.fold<double>(0, (sum, item) => sum + item.total);
+  final stockProfit = sales.fold<double>(0, (sum, item) => sum + item.profit);
+  final expenseTotal = expenses.fold<double>(0, (sum, item) => sum + item.amount);
+  final payrollPaid = payroll.where((item) => item.type == 'صرف راتب').fold<double>(0, (sum, item) => sum + item.amount);
+  return {
+   'patients': patients.length,
+   'appointments': appointments.length,
+   'packages': packages.length,
+   'sessions': packages.fold<int>(0, (sum, item) => sum + item.sessions - item.remaining),
+   'revenue': invoiceRevenue,
+   'outstanding': invoices.fold<double>(0, (sum, item) => sum + item.remaining),
+   'stockRevenue': stockRevenue,
+   'stockProfit': stockProfit,
+   'expenses': expenseTotal,
+   'payrollPaid': payrollPaid,
+   'netEstimate': invoiceRevenue + stockRevenue - expenseTotal - payrollPaid,
+  };
+ }
+
+ @override
+ Widget build(BuildContext context) => FutureBuilder<Map<String, num>>(
+  future: data(),
+  builder: (context, snapshot) {
+   final d = snapshot.data ?? <String, num>{};
+   String money(String key) => (d[key] ?? 0).toStringAsFixed(2);
+   return ListView(
+    padding: const EdgeInsets.all(16),
+    children: [
+     const Text('التقارير', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+     const SizedBox(height: 14),
+     if (snapshot.connectionState == ConnectionState.waiting)
+      const LinearProgressIndicator(),
+     _R('إجمالي المرضى', (d['patients'] ?? 0).toString(), Icons.people),
+     _R('إجمالي المواعيد', (d['appointments'] ?? 0).toString(), Icons.event),
+     _R('الباقات المسجلة', (d['packages'] ?? 0).toString(), Icons.inventory_2),
+     _R('الجلسات المنفذة', (d['sessions'] ?? 0).toString(), Icons.medical_services),
+     _R('المدفوع من فواتير المرضى', money('revenue'), Icons.payments),
+     _R('المتبقي على فواتير المرضى', money('outstanding'), Icons.account_balance_wallet),
+     _R('إيرادات مبيعات المخزون', money('stockRevenue'), Icons.point_of_sale),
+     _R('الربح التقديري للمخزون', money('stockProfit'), Icons.trending_up),
+     _R('المصروفات التشغيلية المسجلة', money('expenses'), Icons.money_off_csred_outlined),
+     _R('إجمالي الرواتب المصروفة', money('payrollPaid'), Icons.badge_outlined),
+     _R('صافي التدفق النقدي التقديري', money('netEstimate'), Icons.account_balance_outlined),
+     const Padding(
+      padding: EdgeInsets.only(top: 8),
+      child: Text(
+       'ملخص تقديري يعتمد على الحركات المسجلة محلياً. راجع القيود والدفعات قبل استخدامه كتقرير محاسبي نهائي.',
+       style: TextStyle(color: Colors.black54, fontSize: 12),
+      ),
+     ),
+    ],
+   );
+  },
+ );
 }
 class _R extends StatelessWidget{final String t,v;final IconData i;const _R(this.t,this.v,this.i);@override Widget build(BuildContext c)=>Card(child:ListTile(leading:Icon(i,color:Theme.of(c).colorScheme.primary),title:Text(t),trailing:Text(v,style:const TextStyle(fontSize:20,fontWeight:FontWeight.bold))));}
 class SettingsPage extends StatefulWidget{const SettingsPage({super.key});@override State<SettingsPage> createState()=>_SettingsPageState();}
