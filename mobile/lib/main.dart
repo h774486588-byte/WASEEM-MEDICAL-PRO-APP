@@ -412,7 +412,7 @@ class _InvoicesPageState extends State<InvoicesPage>{
 class _MoneyCard extends StatelessWidget{
   final String title; final double value; final IconData icon; final Color bg,fg;
   const _MoneyCard(this.title,this.value,this.icon,this.bg,this.fg);
-  @override Widget build(BuildContext c)=>Container(padding:const EdgeInsets.all(11),decoration:BoxDecoration(color:bg,borderRadius:BorderRadius.circular(16)),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Icon(icon,color:fg,size:23),const SizedBox(height:7),Text(value.toStringAsFixed(0),style:TextStyle(fontSize:17,fontWeight:FontWeight.bold,color:fg),maxLines:1),Text(title,style:const TextStyle(fontSize:11,color:Color(0xFF456174)))]);
+ @override Widget build(BuildContext c)=>Container(padding:const EdgeInsets.all(11),decoration:BoxDecoration(color:bg,borderRadius:BorderRadius.circular(16)),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Icon(icon,color:fg,size:23),const SizedBox(height:7),Text(value.toStringAsFixed(0),style:TextStyle(fontSize:17,fontWeight:FontWeight.bold,color:fg),maxLines:1),Text(title,style:const TextStyle(fontSize:11,color:Color(0xFF456174)))]));
 }
 class InvoiceForm extends StatefulWidget{
   final List<Patient> patients;
