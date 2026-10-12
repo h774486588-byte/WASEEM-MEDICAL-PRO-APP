@@ -1,9 +1,9 @@
 class Patient {
-  final String id,fileNo,name,phone,nationalId,birthDate,gender,department,service,doctor,address,notes,createdAt,notificationChannel;
+  final String id,fileNo,name,phone,nationalId,birthDate,gender,department,service,doctor,address,notes,createdAt,notificationChannel,nurse;
   final int age;
-  const Patient({required this.id,required this.fileNo,required this.name,required this.phone,this.nationalId='',this.birthDate='',this.gender='ذكر',this.department='',this.service='',this.doctor='',this.address='',this.notes='',this.notificationChannel='النظام',this.age=0,required this.createdAt});
-  Map<String,dynamic> toJson()=>{'id':id,'fileNo':fileNo,'name':name,'phone':phone,'nationalId':nationalId,'birthDate':birthDate,'gender':gender,'department':department,'service':service,'doctor':doctor,'address':address,'notes':notes,'createdAt':createdAt,'notificationChannel':notificationChannel,'age':age};
-  factory Patient.fromJson(Map<String,dynamic> j)=>Patient(id:j['id']??'',fileNo:j['fileNo']??'',name:j['name']??'',phone:j['phone']??'',nationalId:j['nationalId']??'',birthDate:j['birthDate']??'',gender:j['gender']??'ذكر',department:j['department']??'',service:j['service']??'',doctor:j['doctor']??'',address:j['address']??'',notes:j['notes']??'',createdAt:j['createdAt']??'',notificationChannel:j['notificationChannel']??'النظام',age:(j['age'] as num?)?.toInt()??0);
+  const Patient({required this.id,required this.fileNo,required this.name,required this.phone,this.nationalId='',this.birthDate='',this.gender='ذكر',this.department='',this.service='',this.doctor='',this.address='',this.notes='',this.notificationChannel='النظام',this.nurse='',this.age=0,required this.createdAt});
+  Map<String,dynamic> toJson()=>{'id':id,'fileNo':fileNo,'name':name,'phone':phone,'nationalId':nationalId,'birthDate':birthDate,'gender':gender,'department':department,'service':service,'doctor':doctor,'address':address,'notes':notes,'createdAt':createdAt,'notificationChannel':notificationChannel,'nurse':nurse,'age':age};
+  factory Patient.fromJson(Map<String,dynamic> j)=>Patient(id:j['id']??'',fileNo:j['fileNo']??'',name:j['name']??'',phone:j['phone']??'',nationalId:j['nationalId']??'',birthDate:j['birthDate']??'',gender:j['gender']??'ذكر',department:j['department']??'',service:j['service']??'',doctor:j['doctor']??'',address:j['address']??'',notes:j['notes']??'',createdAt:j['createdAt']??'',notificationChannel:j['notificationChannel']??'النظام',nurse:j['nurse']??'',age:(j['age'] as num?)?.toInt()??0);
 }
 class Appointment {
   final String id,patientId,date,time,doctor,status,notes;
