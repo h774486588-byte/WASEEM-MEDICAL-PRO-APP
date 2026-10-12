@@ -6,6 +6,8 @@ use App\Models\Appointment;
 use App\Models\Expense;
 use App\Models\Invoice;
 use App\Models\MedicalPackage;
+use App\Models\MedicalStaff;
+use App\Models\PayrollEntry;
 use App\Models\Patient;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -33,6 +35,13 @@ class ReportController extends Controller
 
         $invoiceTotals = (clone $invoices)->selectRaw('COALESCE(SUM(total), 0) AS total, COALESCE(SUM(paid), 0) AS paid')->first();
         $expenseTotal = Expense::query()->where('branch_id', $branchId)->sum('amount');
+        $staffCount = MedicalStaff::query()->where('branch_id', $branchId)->where('is_active', true)->count();
+        $month = today()->format('Y-m');
+        $monthPayroll = PayrollEntry::query()
+            ->whereHas('staff', fn (Builder $staff) => $staff->where('branch_id', $branchId))
+            ->where('month', $month);
+        $salaryPaid = (clone $monthPayroll)->where('entry_type', 'salary_payment')->sum('amount');
+        $salaryDeductions = (clone $monthPayroll)->where('entry_type', 'deduction')->sum('amount');
 
         return response()->json([
             'data' => [
@@ -47,7 +56,10 @@ class ReportController extends Controller
                 'invoice_paid' => round((float) ($invoiceTotals->paid ?? 0), 2),
                 'invoice_outstanding' => round((float) ($invoiceTotals->total ?? 0) - (float) ($invoiceTotals->paid ?? 0), 2),
                 'expenses' => round((float) $expenseTotal, 2),
-                'period' => ['date' => today()->toDateString(), 'timezone' => config('app.timezone')],
+                'active_staff' => $staffCount,
+                'salary_paid_this_month' => round((float) $salaryPaid, 2),
+                'salary_deductions_this_month' => round((float) $salaryDeductions, 2),
+                'period' => ['date' => today()->toDateString(), 'month' => $month, 'timezone' => config('app.timezone')],
             ],
         ]);
     }
