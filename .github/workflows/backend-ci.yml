@@ -1,0 +1,75 @@
+name: Backend API CI
+
+on:
+  push:
+    branches: [main, work/backend-api-foundation]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: waseem_medical_test
+          POSTGRES_USER: waseem_test
+          POSTGRES_PASSWORD: waseem_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U waseem_test -d waseem_medical_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      APP_ENV: testing
+      APP_DEBUG: false
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: waseem_medical_test
+      DB_USERNAME: waseem_test
+      DB_PASSWORD: waseem_test_password
+      DB_SSLMODE: disable
+      BCRYPT_ROUNDS: 4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          extensions: bcmath, ctype, curl, dom, fileinfo, mbstring, openssl, pdo, pdo_pgsql, tokenizer, xml
+          coverage: none
+
+      - name: Validate Composer manifest
+        run: composer validate --no-check-publish
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare application key
+        run: php artisan key:generate --force
+
+      - name: Run database migrations
+        run: php artisan migrate --force
+
+      - name: Run feature tests
+        run: php artisan test
