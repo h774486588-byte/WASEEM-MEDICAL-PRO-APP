@@ -245,7 +245,7 @@ class _PatientsPageState extends State<PatientsPage>{
     final ns=await LocalStore.notifications();
     final settings=await LocalStore.settings();
     final channel=r.notificationChannel;
-    final message='مرحباً بك في '+(settings['name']??'مركز وسيم الطبي')+' 🌷\\nتم تسجيل ملفك بنجاح.\\nرقم الملف: '+r.fileNo+'\\nنتمنى لك دوام الصحة والعافية.\\n'+(settings['name']??'مركز وسيم الطبي')+'\\n'+(settings['phone']??'');
+    final message='مرحباً بك في '+(settings['name']??'مركز وسيم الطبي')+' 🌷\nتم تسجيل ملفك بنجاح.\nرقم الملف: '+r.fileNo+'\nنتمنى لك دوام الصحة والعافية.\n'+(settings['name']??'مركز وسيم الطبي')+'\n'+(settings['phone']??'');
     if(channel!='بدون') ns.insert(0,AppNotification(id:idNow(),title:'تسجيل مريض جديد',body:message,channel:channel,status:channel=='النظام'?'تم التسجيل':'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:r.phone));
     await LocalStore.saveNotifications(ns);
     setState((){});widget.changed();
@@ -294,7 +294,6 @@ class _PatientFormState extends State<PatientForm>{
   final name=TextEditingController(),phone=TextEditingController(),alternate=TextEditingController(),national=TextEditingController(),ageController=TextEditingController(),service=TextEditingController(),doctor=TextEditingController(),address=TextEditingController(),notes=TextEditingController();
   String gender='ذكر',department='العلاج الطبيعي',channel='النظام'; DateTime? birth;
   Future<void> pickBirth()async{final d=await showDatePicker(context:context,initialDate:DateTime(2000),firstDate:DateTime(1900),lastDate:DateTime.now());if(d!=null)setState(()=>birth=d);}
-  int? age(){if(birth==null)return null;final now=DateTime.now();var a=now.year-birth!.year;if(now.month<birth!.month||(now.month==birth!.month&&now.day<birth!.day))a--;return a;}
   Future<void> save()async{if(name.text.trim().isEmpty||phone.text.trim().isEmpty||ageController.text.trim().isEmpty||(int.tryParse(ageController.text.trim())??-1)<0){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل اسم المريض ورقم الهاتف والعمر الصحيح')));return;}final n=await LocalStore.nextPatientNumber();final extra=alternate.text.trim().isEmpty?'':'هاتف بديل: '+alternate.text.trim();final note=notes.text.trim();final p=Patient(id:idNow(),fileNo:'P-'+n.toString(),name:name.text.trim(),phone:phone.text.trim(),nationalId:national.text.trim(),birthDate:birth==null?'':dateOnly(birth!),age:int.tryParse(ageController.text.trim())??0,gender:gender,department:department,service:service.text.trim(),doctor:doctor.text.trim(),address:address.text.trim(),notes:extra+(extra.isNotEmpty&&note.isNotEmpty?'\n':'')+note,notificationChannel:channel,createdAt:dateOnly(DateTime.now()));Navigator.pop(context,p);}
   @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:const Text('تسجيل مريض جديد')),body:ListView(padding:const EdgeInsets.all(16),children:[
     TextField(controller:name,decoration:const InputDecoration(labelText:'اسم المريض *',prefixIcon:Icon(Icons.person_outline))),const SizedBox(height:10),
@@ -491,7 +490,7 @@ class _InvoicesPageState extends State<InvoicesPage>{
         ...inv.reversed.map((x)=>Card(margin:const EdgeInsets.only(bottom:10),child:ListTile(
           leading:CircleAvatar(backgroundColor:const Color(0xFFEAF4FF),child:const Icon(Icons.receipt_long,color:Color(0xFF0869B9))),
           title:Text(x.number,style:const TextStyle(fontWeight:FontWeight.bold)),
-          subtitle:Text(pname(x.patientId)+' • '+x.date+'\\nالإجمالي '+x.total.toStringAsFixed(0)+' • المدفوع '+x.paid.toStringAsFixed(0)),
+          subtitle:Text(pname(x.patientId)+' • '+x.date+'\nالإجمالي '+x.total.toStringAsFixed(0)+' • المدفوع '+x.paid.toStringAsFixed(0)),
           isThreeLine:true,
           trailing:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.end,children:[Text(x.remaining.toStringAsFixed(0),style:TextStyle(fontWeight:FontWeight.bold,color:x.remaining<=0?const Color(0xFF15945A):const Color(0xFFE58B00))),Text(x.remaining<=0?'مدفوعة':'متبقي',style:const TextStyle(fontSize:11,color:Colors.black54))])
         )))
@@ -568,7 +567,7 @@ class _NotificationsPageState extends State<NotificationsPage>{
         ...n.map((x)=>Card(margin:const EdgeInsets.only(bottom:10),child:ListTile(
           leading:CircleAvatar(backgroundColor:x.channel=='WhatsApp'?const Color(0xFFEAFBF1):const Color(0xFFEAF4FF),child:Icon(x.channel=='WhatsApp'?Icons.chat_bubble_outline:Icons.notifications_none_rounded,color:x.channel=='WhatsApp'?const Color(0xFF15945A):const Color(0xFF0869B9))),
           title:Text(x.title,style:const TextStyle(fontWeight:FontWeight.bold)),
-          subtitle:Text(x.body+'\\n'+x.date, maxLines:3,overflow:TextOverflow.ellipsis),
+          subtitle:Text(x.body+'\n'+x.date, maxLines:3,overflow:TextOverflow.ellipsis),
           trailing:Row(mainAxisSize:MainAxisSize.min,children:[IconButton(tooltip:'فتح الإرسال مباشرة',onPressed:()=>_send(x),icon:Icon(x.channel=='SMS'?Icons.sms_outlined:Icons.send_rounded,color:Theme.of(c).colorScheme.primary,size:20)),IconButton(tooltip:'نسخ نص الرسالة',onPressed:()async{await Clipboard.setData(ClipboardData(text:x.body));if(c.mounted)ScaffoldMessenger.of(c).showSnackBar(const SnackBar(content:Text('تم نسخ نص الرسالة.')));},icon:const Icon(Icons.copy_outlined,size:19))])
         )))
       ]))
