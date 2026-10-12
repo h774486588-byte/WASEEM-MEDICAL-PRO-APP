@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'storage.dart';
 class ReportsPage extends StatelessWidget{
  const ReportsPage({super.key});
@@ -11,5 +13,29 @@ class _SettingsPageState extends State<SettingsPage>{final name=TextEditingContr
  @override void initState(){super.initState();_load();}
  Future<void> _load()async{final s=await LocalStore.settings();name.text=s['name']??'نظام وسيم الطبي PRO';phone.text=s['phone']??'';address.text=s['address']??'';if(mounted)setState((){whatsapp=s['whatsapp']=='true';sms=s['sms']=='true';});}
  Future<void> _save()async{await LocalStore.saveSettings({'name':name.text.trim(),'phone':phone.text.trim(),'address':address.text.trim(),'whatsapp':'$whatsapp','sms':'$sms'});if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم حفظ إعدادات المركز')));}
- @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:const Text('إعدادات المركز')),body:ListView(padding:const EdgeInsets.all(16),children:[TextField(controller:name,decoration:const InputDecoration(labelText:'اسم المركز',prefixIcon:Icon(Icons.business))),const SizedBox(height:12),TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'رقم التواصل',prefixIcon:Icon(Icons.phone))),const SizedBox(height:12),TextField(controller:address,decoration:const InputDecoration(labelText:'العنوان',prefixIcon:Icon(Icons.location_on))),const SizedBox(height:8),SwitchListTile(title:const Text('تفعيل قناة WhatsApp'),value:whatsapp,onChanged:(v)=>setState(()=>whatsapp=v)),SwitchListTile(title:const Text('تفعيل قناة SMS'),value:sms,onChanged:(v)=>setState(()=>sms=v)),const SizedBox(height:12),FilledButton.icon(onPressed:_save,icon:const Icon(Icons.save),label:const Text('حفظ الإعدادات')),const SizedBox(height:20),const Card(child:Padding(padding:EdgeInsets.all(14),child:Text('تفعيل القناة يجهز النظام للتكامل، أما الإرسال الآلي الحقيقي فيحتاج بيانات مزود WhatsApp Business أو SMS Gateway.')))])));
+ Future<void> _exportBackup() async {
+   try {
+     final data=await LocalStore.exportData();
+     final json=const JsonEncoder.withIndent('  ').convert({'app':'WASEEM MEDICAL PRO','schemaVersion':1,'exportedAt':DateTime.now().toIso8601String(),'data':data});
+     await Clipboard.setData(ClipboardData(text:json));
+     if(!mounted)return;
+     await showDialog<void>(context:context,builder:(ctx)=>AlertDialog(title:const Text('تم تجهيز النسخة الاحتياطية'),content:const Text('تم نسخ بيانات التطبيق بصيغة JSON إلى الحافظة. احفظها في ملف نصي آمن. تحتوي النسخة على بيانات المرضى، لذا لا تشاركها مع الآخرين.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('حسنًا'))]));
+   } catch(e) { if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر إنشاء النسخة الاحتياطية: $e'))); }
+ }
+ Future<void> _importBackup() async {
+   final controller=TextEditingController();
+   final raw=await showDialog<String>(context:context,builder:(ctx)=>Directionality(textDirection:TextDirection.rtl,child:AlertDialog(title:const Text('استعادة نسخة احتياطية'),content:SizedBox(width:480,child:TextField(controller:controller,maxLines:9,decoration:const InputDecoration(hintText:'الصق محتوى ملف JSON هنا',border:OutlineInputBorder()))),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,controller.text),child:const Text('استعادة البيانات'))])));
+   if(raw==null||raw.trim().isEmpty)return;
+   try {
+     final decoded=jsonDecode(raw);
+     if(decoded is! Map<String,dynamic> || decoded['app']!='WASEEM MEDICAL PRO' || decoded['data'] is! Map) throw const FormatException('ملف النسخة الاحتياطية غير صالح أو غير معروف.');
+     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('تأكيد الاستعادة'),content:const Text('ستُستبدل البيانات المحلية الموجودة بالبيانات الموجودة في النسخة الاحتياطية. هل تريد المتابعة؟'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('متابعة'))]));
+     if(ok!=true)return;
+     await LocalStore.importData(Map<String,dynamic>.from(decoded['data'] as Map));
+     if(!mounted)return;
+     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تمت استعادة النسخة الاحتياطية. أعد فتح الأقسام لتحديث البيانات.')));
+   } catch(e) { if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('فشلت الاستعادة: $e'))); }
+   finally { controller.dispose(); }
+ }
+ @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:const Text('إعدادات المركز')),body:ListView(padding:const EdgeInsets.all(16),children:[TextField(controller:name,decoration:const InputDecoration(labelText:'اسم المركز',prefixIcon:Icon(Icons.business))),const SizedBox(height:12),TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'رقم التواصل',prefixIcon:Icon(Icons.phone))),const SizedBox(height:12),TextField(controller:address,decoration:const InputDecoration(labelText:'العنوان',prefixIcon:Icon(Icons.location_on))),const SizedBox(height:8),SwitchListTile(title:const Text('تفعيل قناة WhatsApp'),value:whatsapp,onChanged:(v)=>setState(()=>whatsapp=v)),SwitchListTile(title:const Text('تفعيل قناة SMS'),value:sms,onChanged:(v)=>setState(()=>sms=v)),const SizedBox(height:12),FilledButton.icon(onPressed:_save,icon:const Icon(Icons.save),label:const Text('حفظ الإعدادات')),const SizedBox(height:10),OutlinedButton.icon(onPressed:_exportBackup,icon:const Icon(Icons.backup_outlined),label:const Text('تصدير نسخة احتياطية')),const SizedBox(height:8),OutlinedButton.icon(onPressed:_importBackup,icon:const Icon(Icons.restore_rounded),label:const Text('استعادة نسخة احتياطية')),const SizedBox(height:20),const Card(child:Padding(padding:EdgeInsets.all(14),child:Text('تفعيل القناة يجهز النظام للتكامل، أما الإرسال الآلي الحقيقي فيحتاج بيانات مزود WhatsApp Business أو SMS Gateway.')))])));
 }
