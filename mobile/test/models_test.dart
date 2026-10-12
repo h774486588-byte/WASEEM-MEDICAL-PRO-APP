@@ -74,4 +74,74 @@ void main() {
       expect(payment.date, isEmpty);
     });
   });
+
+  group('Finance models', () {
+    test('loads older staff records without monthly salary', () {
+      final staff = StaffMember.fromJson({
+        'id': 'staff-1',
+        'name': 'موظف',
+        'role': 'استقبال',
+        'phone': '777000000',
+      });
+
+      expect(staff.monthlySalary, 0);
+    });
+
+    test('round-trips expense data', () {
+      const expense = ExpenseRecord(
+        id: 'expense-1',
+        title: 'مستلزمات',
+        category: 'مستلزمات طبية',
+        payee: 'المورد',
+        date: '2026-10-12',
+        method: 'نقدي',
+        amount: 125.5,
+        notes: 'فاتورة شراء',
+      );
+
+      final restored = ExpenseRecord.fromJson(expense.toJson());
+      expect(restored.title, expense.title);
+      expect(restored.amount, expense.amount);
+      expect(restored.payee, expense.payee);
+      expect(restored.notes, expense.notes);
+    });
+
+    test('round-trips attendance status and check-in time', () {
+      const record = AttendanceRecord(
+        id: 'att-1',
+        staffId: 'staff-1',
+        staffName: 'موظف',
+        date: '2026-10-12',
+        status: 'متأخر',
+        checkIn: '08:30',
+      );
+
+      final restored = AttendanceRecord.fromJson(record.toJson());
+      expect(restored.staffId, record.staffId);
+      expect(restored.status, 'متأخر');
+      expect(restored.checkIn, '08:30');
+    });
+
+    test('round-trips payroll deduction entries', () {
+      const entry = PayrollEntry(
+        id: 'payroll-1',
+        staffId: 'staff-1',
+        staffName: 'موظف',
+        type: 'خصم',
+        month: '2026-10',
+        date: '2026-10-12',
+        method: 'نقدي',
+        amount: 25,
+        notes: 'تأخير',
+      );
+
+      final restored = PayrollEntry.fromJson(entry.toJson());
+      expect(restored.staffId, entry.staffId);
+      expect(restored.type, 'خصم');
+      expect(restored.month, '2026-10');
+      expect(restored.amount, 25);
+      expect(restored.notes, 'تأخير');
+    });
+  });
+
 }
