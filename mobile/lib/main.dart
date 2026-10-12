@@ -339,11 +339,26 @@ class PatientDetails extends StatelessWidget{
   @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(
     appBar:AppBar(title:Text('ملف المريض • ${patient.fileNo}')),
     body:FutureBuilder<List<Object>>(
-      future:Future.wait<Object>([LocalStore.packages(),LocalStore.invoices(),LocalStore.sessions()]),
+      future:Future.wait<Object>([LocalStore.packages(),LocalStore.invoices(),LocalStore.sessions(),LocalStore.payments()]),
       builder:(context,s){
         final packages=s.data==null?<PackageRecord>[]:s.data![0] as List<PackageRecord>;
         final invoices=s.data==null?<Invoice>[]:s.data![1] as List<Invoice>;
         final sessionHistory=s.data==null?<SessionRecord>[]:s.data![2] as List<SessionRecord>;
+        final paymentHistory=s.data==null?<PaymentRecord>[]:s.data![3] as List<PaymentRecord>;
+        final patientPayments=paymentHistory.where((x)=>x.patientId==patient.id).toList();
+        final ledger=<Map<String,dynamic>>[];
+        for(final invoice in (s.data==null?<Invoice>[]:s.data![1] as List<Invoice>).where((x)=>x.patientId==patient.id)){
+          final linked=patientPayments.where((p)=>p.invoiceId==invoice.id).toList();
+          final additional=linked.fold<double>(0,(sum,p)=>sum+p.amount);
+          final original=(invoice.paid-additional).clamp(0.0,invoice.total).toDouble();
+          if(original>0){
+            ledger.add({'date':invoice.date,'amount':original,'title':'دفعة عند إنشاء الفاتورة ${invoice.number}','method':'دفعة أولية','notes':''});
+          }
+          for(final payment in linked){
+            ledger.add({'date':payment.date,'amount':payment.amount,'title':'دفعة على الفاتورة ${invoice.number}','method':payment.method,'notes':payment.notes});
+          }
+        }
+        ledger.sort((a,b)=>(b['date'] as String).compareTo(a['date'] as String));
         final patientSessions=sessionHistory.where((x)=>x.patientId==patient.id).toList()..sort((a,b)=>b.date.compareTo(a.date));
         final patientPackages=packages.where((x)=>x.patientId==patient.id).toList();
         final patientInvoices=invoices.where((x)=>x.patientId==patient.id).toList();
@@ -424,6 +439,18 @@ class PatientDetails extends StatelessWidget{
               ),
             );
           }),
+          const SizedBox(height: 12),
+          const Text('كشف حركة الحساب', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          if(ledger.isEmpty)
+            const Card(child: ListTile(title: Text('لا توجد حركات دفع مسجلة بعد.'))),
+          ...ledger.map((entry)=>Card(
+            child:ListTile(
+              leading:const CircleAvatar(child:Icon(Icons.payments_outlined)),
+              title:Text(entry['title'] as String,style:const TextStyle(fontWeight:FontWeight.bold)),
+              subtitle:Text('${entry['date']} • ${entry['method']}${(entry['notes'] as String).isEmpty?'':'\n'+(entry['notes'] as String)}'),
+              trailing:Text((entry['amount'] as double).toStringAsFixed(2),style:const TextStyle(fontWeight:FontWeight.bold,color:Color(0xFF16845B))),
+            ),
+          )),
           const SizedBox(height: 12),
           const Text('سجل الجلسات المنفذة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           if (patientSessions.isEmpty)
