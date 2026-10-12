@@ -526,6 +526,35 @@ class NotificationsPage extends StatefulWidget{
 }
 class _NotificationsPageState extends State<NotificationsPage>{
   Future<void> clear()async{await LocalStore.saveNotifications([]);setState((){});}
+  Future<void> _send(AppNotification item) async {
+    final phone=item.recipientPhone.trim();
+    if(phone.isEmpty){
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('لا يوجد رقم هاتف محفوظ لهذا الإشعار.')));
+      return;
+    }
+    Uri target;
+    if(item.channel=='WhatsApp'){
+      final digits=phone.replaceAll(RegExp(r'[^0-9]'),'').replaceFirst(RegExp(r'^00'),'');
+      if(digits.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('رقم الهاتف غير صالح لفتح WhatsApp.')));return;}
+      target=Uri.parse('https://wa.me/$digits?text=${Uri.encodeComponent(item.body)}');
+    } else if(item.channel=='SMS'){
+      target=Uri(scheme:'sms',path:phone,queryParameters:{'body':item.body});
+    } else {
+      final choice=await showModalBottomSheet<String>(context:context,builder:(ctx)=>SafeArea(child:Wrap(children:[
+        ListTile(leading:const Icon(Icons.chat,color:Colors.green),title:const Text('الإرسال عبر WhatsApp'),onTap:()=>Navigator.pop(ctx,'WhatsApp')),
+        ListTile(leading:const Icon(Icons.sms_outlined,color:Colors.blue),title:const Text('الإرسال عبر SMS'),onTap:()=>Navigator.pop(ctx,'SMS')),
+      ])));
+      if(choice==null)return;
+      await _send(AppNotification(id:item.id,title:item.title,body:item.body,channel:choice,status:item.status,date:item.date,recipientPhone:item.recipientPhone));
+      return;
+    }
+    try {
+      final opened=await launchUrl(target,mode:LaunchMode.externalApplication);
+      if(!opened&&mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تعذر فتح تطبيق الإرسال. تحقق من تثبيت WhatsApp أو تطبيق الرسائل.')));
+    } catch(e) {
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر فتح تطبيق الإرسال: $e')));
+    }
+  }
   @override Widget build(BuildContext c)=>FutureBuilder<List<AppNotification>>(future:LocalStore.notifications(),builder:(c,s){
     final n=s.data??[];
     return ListView(padding:EdgeInsets.zero,children:[
@@ -540,7 +569,7 @@ class _NotificationsPageState extends State<NotificationsPage>{
           leading:CircleAvatar(backgroundColor:x.channel=='WhatsApp'?const Color(0xFFEAFBF1):const Color(0xFFEAF4FF),child:Icon(x.channel=='WhatsApp'?Icons.chat_bubble_outline:Icons.notifications_none_rounded,color:x.channel=='WhatsApp'?const Color(0xFF15945A):const Color(0xFF0869B9))),
           title:Text(x.title,style:const TextStyle(fontWeight:FontWeight.bold)),
           subtitle:Text(x.body+'\\n'+x.date, maxLines:3,overflow:TextOverflow.ellipsis),
-          trailing:Row(mainAxisSize:MainAxisSize.min,children:[Flexible(child:Text(x.status,style:const TextStyle(fontSize:10,color:Colors.black54),maxLines:2,overflow:TextOverflow.ellipsis)),IconButton(tooltip:'نسخ نص الرسالة',onPressed:()async{await Clipboard.setData(ClipboardData(text:x.body));if(c.mounted)ScaffoldMessenger.of(c).showSnackBar(const SnackBar(content:Text('تم نسخ نص الرسالة. يمكنك لصقه في WhatsApp أو SMS.')));},icon:const Icon(Icons.copy_outlined,size:19))])
+          trailing:Row(mainAxisSize:MainAxisSize.min,children:[IconButton(tooltip:'فتح الإرسال مباشرة',onPressed:()=>_send(x),icon:Icon(x.channel=='SMS'?Icons.sms_outlined:Icons.send_rounded,color:Theme.of(c).colorScheme.primary,size:20)),IconButton(tooltip:'نسخ نص الرسالة',onPressed:()async{await Clipboard.setData(ClipboardData(text:x.body));if(c.mounted)ScaffoldMessenger.of(c).showSnackBar(const SnackBar(content:Text('تم نسخ نص الرسالة.')));},icon:const Icon(Icons.copy_outlined,size:19))])
         )))
       ]))
     ]);
