@@ -374,11 +374,11 @@ class PatientDetails extends StatelessWidget{
           const SizedBox(height:12),
           const Text('الباقات والجلسات',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
           if(patientPackages.isEmpty)const Card(child:ListTile(title:Text('لا توجد باقات مسجلة لهذا المريض'))),
-          ...patientPackages.map((p)=>Card(child:ListTile(leading:const Icon(Icons.layers_outlined),title:Text(p.name),subtitle:Text('السعر: ${p.price.toStringAsFixed(2)} • المدفوع: ${p.paid.toStringAsFixed(2)}'),trailing:Text('${p.remaining}/${p.sessions}',style:const TextStyle(fontWeight:FontWeight.bold,color:Color(0xFF0869B9))))),
+          ...patientPackages.map((p)=>Card(child:ListTile(leading:const Icon(Icons.layers_outlined),title:Text(p.name),subtitle:Text('السعر: ${p.price.toStringAsFixed(2)} • المدفوع: ${p.paid.toStringAsFixed(2)}'),trailing:Text('${p.remaining}/${p.sessions}',style:const TextStyle(fontWeight:FontWeight.bold,color:Color(0xFF0869B9))))))),
           const SizedBox(height:12),
           const Text('الفواتير والحركة المالية',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
           if(patientInvoices.isEmpty)const Card(child:ListTile(title:Text('لا توجد فواتير مسجلة'))),
-          ...patientInvoices.map((i)=>Card(child:ListTile(leading:const Icon(Icons.receipt_long_outlined),title:Text('فاتورة ${i.number}'),subtitle:Text('التاريخ: ${i.date} • الحالة: ${i.status}'),trailing:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.end,children:[Text('إجمالي ${i.total.toStringAsFixed(2)}'),Text('متبقي ${i.remaining.toStringAsFixed(2)}',style:TextStyle(color:i.remaining>0?Colors.red:Colors.green,fontWeight:FontWeight.bold))]))),
+          ...patientInvoices.map((i)=>Card(child:ListTile(leading:const Icon(Icons.receipt_long_outlined),title:Text('فاتورة ${i.number}'),subtitle:Text('التاريخ: ${i.date} • الحالة: ${i.status}'),trailing:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.end,children:[Text('إجمالي ${i.total.toStringAsFixed(2)}'),Text('متبقي ${i.remaining.toStringAsFixed(2)}',style:TextStyle(color:i.remaining>0?Colors.red:Colors.green,fontWeight:FontWeight.bold))])))),
           if(s.connectionState==ConnectionState.waiting)const Center(child:Padding(padding:EdgeInsets.all(12),child:CircularProgressIndicator()))
         ]);
       }
