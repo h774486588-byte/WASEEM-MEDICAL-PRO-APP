@@ -29,7 +29,7 @@ class Invoice {
 }
 class AppNotification {
   final String id,title,body,channel,status,date,recipientPhone;
-  const AppNotification({required this.id,required this.title,required this.body,required this.channel,required this.status,required this.date,this.recipientPhone=''};
+  const AppNotification({required this.id,required this.title,required this.body,required this.channel,required this.status,required this.date,this.recipientPhone=''});
   Map<String,dynamic> toJson()=>{'id':id,'title':title,'body':body,'channel':channel,'status':status,'date':date,'recipientPhone':recipientPhone};
   factory AppNotification.fromJson(Map<String,dynamic> j)=>AppNotification(id:j['id']??'',title:j['title']??'',body:j['body']??'',channel:j['channel']??'',status:j['status']??'جاهز',date:j['date']??'',recipientPhone:j['recipientPhone']??'');
 }
