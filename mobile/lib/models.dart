@@ -78,9 +78,96 @@ class InventoryItem {
 }
 class StaffMember {
  final String id,name,role,phone;
- const StaffMember({required this.id,required this.name,required this.role,required this.phone});
- Map<String,dynamic> toJson()=>{'id':id,'name':name,'role':role,'phone':phone};
- factory StaffMember.fromJson(Map<String,dynamic> j)=>StaffMember(id:j['id']??'',name:j['name']??'',role:j['role']??'',phone:j['phone']??'');
+ final double monthlySalary;
+ const StaffMember({required this.id,required this.name,required this.role,required this.phone,this.monthlySalary=0});
+ Map<String,dynamic> toJson()=>{'id':id,'name':name,'role':role,'phone':phone,'monthlySalary':monthlySalary};
+ factory StaffMember.fromJson(Map<String,dynamic> j)=>StaffMember(id:j['id']?.toString()??'',name:j['name']?.toString()??'',role:j['role']?.toString()??'',phone:j['phone']?.toString()??'',monthlySalary:(j['monthlySalary'] as num?)?.toDouble()??0);
+}
+
+class ExpenseRecord {
+  final String id, title, category, payee, date, method, notes;
+  final double amount;
+  const ExpenseRecord({
+    required this.id,
+    required this.title,
+    required this.category,
+    required this.payee,
+    required this.date,
+    required this.method,
+    required this.amount,
+    this.notes = '',
+  });
+  Map<String, dynamic> toJson() => {
+    'id': id, 'title': title, 'category': category, 'payee': payee,
+    'date': date, 'method': method, 'amount': amount, 'notes': notes,
+  };
+  factory ExpenseRecord.fromJson(Map<String, dynamic> j) => ExpenseRecord(
+    id: j['id']?.toString() ?? '',
+    title: j['title']?.toString() ?? '',
+    category: j['category']?.toString() ?? 'عام',
+    payee: j['payee']?.toString() ?? '',
+    date: j['date']?.toString() ?? '',
+    method: j['method']?.toString() ?? 'نقدي',
+    amount: (j['amount'] as num?)?.toDouble() ?? 0,
+    notes: j['notes']?.toString() ?? '',
+  );
+}
+
+class AttendanceRecord {
+  final String id, staffId, staffName, date, status, checkIn, notes;
+  const AttendanceRecord({
+    required this.id,
+    required this.staffId,
+    required this.staffName,
+    required this.date,
+    required this.status,
+    this.checkIn = '',
+    this.notes = '',
+  });
+  Map<String, dynamic> toJson() => {
+    'id': id, 'staffId': staffId, 'staffName': staffName, 'date': date,
+    'status': status, 'checkIn': checkIn, 'notes': notes,
+  };
+  factory AttendanceRecord.fromJson(Map<String, dynamic> j) => AttendanceRecord(
+    id: j['id']?.toString() ?? '',
+    staffId: j['staffId']?.toString() ?? '',
+    staffName: j['staffName']?.toString() ?? '',
+    date: j['date']?.toString() ?? '',
+    status: j['status']?.toString() ?? 'حاضر',
+    checkIn: j['checkIn']?.toString() ?? '',
+    notes: j['notes']?.toString() ?? '',
+  );
+}
+
+class PayrollEntry {
+  final String id, staffId, staffName, type, month, date, method, notes;
+  final double amount;
+  const PayrollEntry({
+    required this.id,
+    required this.staffId,
+    required this.staffName,
+    required this.type,
+    required this.month,
+    required this.date,
+    required this.method,
+    required this.amount,
+    this.notes = '',
+  });
+  Map<String, dynamic> toJson() => {
+    'id': id, 'staffId': staffId, 'staffName': staffName, 'type': type,
+    'month': month, 'date': date, 'method': method, 'amount': amount, 'notes': notes,
+  };
+  factory PayrollEntry.fromJson(Map<String, dynamic> j) => PayrollEntry(
+    id: j['id']?.toString() ?? '',
+    staffId: j['staffId']?.toString() ?? '',
+    staffName: j['staffName']?.toString() ?? '',
+    type: j['type']?.toString() ?? 'صرف راتب',
+    month: j['month']?.toString() ?? '',
+    date: j['date']?.toString() ?? '',
+    method: j['method']?.toString() ?? 'نقدي',
+    amount: (j['amount'] as num?)?.toDouble() ?? 0,
+    notes: j['notes']?.toString() ?? '',
+  );
 }
 
 class Supplier {
