@@ -334,12 +334,61 @@ class PatientDetails extends StatelessWidget{
   final Patient patient;
   const PatientDetails({super.key,required this.patient});
   @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(
-    appBar:AppBar(title:Text(patient.fileNo)),
-    body:ListView(padding:const EdgeInsets.all(16),children:[
-      Card(child:ListTile(leading:const CircleAvatar(child:Icon(Icons.person)),title:Text(patient.name,style:const TextStyle(fontWeight:FontWeight.bold)),subtitle:Text(patient.phone))),
-      Info('الجنس',patient.gender),Info('العمر',patient.age>0?'${patient.age} سنة':''),Info('تاريخ الميلاد',patient.birthDate),Info('الخدمة',patient.service),Info('الطبيب',patient.doctor),Info('العنوان',patient.address),Info('ملاحظات',patient.notes)
-    ])
+    appBar:AppBar(title:Text('ملف المريض • ${patient.fileNo}')),
+    body:FutureBuilder<List<Object>>(
+      future:Future.wait<Object>([LocalStore.packages(),LocalStore.invoices()]),
+      builder:(context,s){
+        final packages=s.data==null?<PackageRecord>[]:s.data![0] as List<PackageRecord>;
+        final invoices=s.data==null?<Invoice>[]:s.data![1] as List<Invoice>;
+        final patientPackages=packages.where((x)=>x.patientId==patient.id).toList();
+        final patientInvoices=invoices.where((x)=>x.patientId==patient.id).toList();
+        final outstanding=patientInvoices.fold<double>(0,(sum,x)=>sum+x.remaining);
+        final paid=patientInvoices.fold<double>(0,(sum,x)=>sum+x.paid);
+        final remaining=patientPackages.fold<int>(0,(sum,x)=>sum+x.remaining);
+        final used=patientPackages.fold<int>(0,(sum,x)=>sum+(x.sessions-x.remaining));
+        return ListView(padding:const EdgeInsets.all(16),children:[
+          Card(child:Padding(padding:const EdgeInsets.all(16),child:Row(children:[
+            const CircleAvatar(radius:28,child:Icon(Icons.person,size:30)),
+            const SizedBox(width:12),
+            Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+              Text(patient.name,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:19)),
+              const SizedBox(height:4),Text(patient.fileNo+' • '+patient.phone,style:const TextStyle(color:Colors.black54)),
+              Text(patient.department.isEmpty?'القسم غير محدد':patient.department,style:const TextStyle(color:Color(0xFF0869B9)))
+            ]))
+          ]))),
+          const SizedBox(height:8),
+          Row(children:[
+            Expanded(child:_PatientMetric(title:'الرصيد المستحق',value:outstanding.toStringAsFixed(2),icon:Icons.account_balance_wallet,color:const Color(0xFFD94A55))),
+            const SizedBox(width:8),
+            Expanded(child:_PatientMetric(title:'المدفوع بالفواتير',value:paid.toStringAsFixed(2),icon:Icons.payments,color:const Color(0xFF16845B)))
+          ]),
+          const SizedBox(height:8),
+          Row(children:[
+            Expanded(child:_PatientMetric(title:'جلسات مستخدمة',value:used.toString(),icon:Icons.check_circle_outline,color:const Color(0xFF0876D1))),
+            const SizedBox(width:8),
+            Expanded(child:_PatientMetric(title:'جلسات متبقية',value:remaining.toString(),icon:Icons.hourglass_bottom,color:const Color(0xFF7B3FE4)))
+          ]),
+          const SizedBox(height:12),
+          const Text('البيانات الأساسية',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
+          Info('رقم الملف',patient.fileNo),Info('رقم الهاتف',patient.phone),Info('الجنس',patient.gender),Info('العمر',patient.age>0?'${patient.age} سنة':''),Info('تاريخ الميلاد',patient.birthDate),Info('الخدمة / الشكوى',patient.service),Info('الطبيب / الأخصائي',patient.doctor),Info('العنوان',patient.address),Info('ملاحظات',patient.notes),
+          const SizedBox(height:12),
+          const Text('الباقات والجلسات',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
+          if(patientPackages.isEmpty)const Card(child:ListTile(title:Text('لا توجد باقات مسجلة لهذا المريض'))),
+          ...patientPackages.map((p)=>Card(child:ListTile(leading:const Icon(Icons.layers_outlined),title:Text(p.name),subtitle:Text('السعر: ${p.price.toStringAsFixed(2)} • المدفوع: ${p.paid.toStringAsFixed(2)}'),trailing:Text('${p.remaining}/${p.sessions}',style:const TextStyle(fontWeight:FontWeight.bold,color:Color(0xFF0869B9))))),
+          const SizedBox(height:12),
+          const Text('الفواتير والحركة المالية',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
+          if(patientInvoices.isEmpty)const Card(child:ListTile(title:Text('لا توجد فواتير مسجلة'))),
+          ...patientInvoices.map((i)=>Card(child:ListTile(leading:const Icon(Icons.receipt_long_outlined),title:Text('فاتورة ${i.number}'),subtitle:Text('التاريخ: ${i.date} • الحالة: ${i.status}'),trailing:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.end,children:[Text('إجمالي ${i.total.toStringAsFixed(2)}'),Text('متبقي ${i.remaining.toStringAsFixed(2)}',style:TextStyle(color:i.remaining>0?Colors.red:Colors.green,fontWeight:FontWeight.bold))]))),
+          if(s.connectionState==ConnectionState.waiting)const Center(child:Padding(padding:EdgeInsets.all(12),child:CircularProgressIndicator()))
+        ]);
+      }
+    )
   ));
+}
+class _PatientMetric extends StatelessWidget{
+  final String title,value;final IconData icon;final Color color;
+  const _PatientMetric({required this.title,required this.value,required this.icon,required this.color});
+  @override Widget build(BuildContext c)=>Card(child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Icon(icon,color:color),const SizedBox(height:8),Text(value,style:TextStyle(fontWeight:FontWeight.bold,fontSize:19,color:color),maxLines:1),Text(title,style:const TextStyle(fontSize:11,color:Colors.black54))])));
 }
 class Info extends StatelessWidget{final String a,b;const Info(this.a,this.b,{super.key});@override Widget build(BuildContext c)=>Card(child:ListTile(title:Text(a),subtitle:Text(b.isEmpty?'—':b)));}
 
