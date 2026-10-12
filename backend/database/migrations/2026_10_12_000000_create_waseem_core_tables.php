@@ -32,7 +32,8 @@ return new class extends Migration
         Schema::create('patients', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('branch_id')->nullable()->constrained('branches')->nullOnDelete();
-            $table->string('file_no', 30)->unique();
+            $table->string('file_no', 30);
+            $table->unique(['branch_id', 'file_no']);
             $table->string('name', 200);
             $table->string('phone', 40);
             $table->string('national_id', 80)->nullable();
