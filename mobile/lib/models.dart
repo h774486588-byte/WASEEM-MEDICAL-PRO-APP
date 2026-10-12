@@ -12,12 +12,12 @@ class Appointment {
   factory Appointment.fromJson(Map<String,dynamic> j)=>Appointment(id:j['id']??'',patientId:j['patientId']??'',date:j['date']??'',time:j['time']??'',doctor:j['doctor']??'',status:j['status']??'مؤكد',notes:j['notes']??'');
 }
 class PackageRecord {
-  final String id,patientId,name,startDate,endDate;
+  final String id,patientId,name,startDate,endDate,therapist;
   final double price,paid;
   final int sessions,remaining;
-  const PackageRecord({required this.id,required this.patientId,required this.name,required this.price,required this.paid,required this.sessions,required this.remaining,required this.startDate,required this.endDate});
-  Map<String,dynamic> toJson()=>{'id':id,'patientId':patientId,'name':name,'price':price,'paid':paid,'sessions':sessions,'remaining':remaining,'startDate':startDate,'endDate':endDate};
-  factory PackageRecord.fromJson(Map<String,dynamic> j)=>PackageRecord(id:j['id']??'',patientId:j['patientId']??'',name:j['name']??'',price:(j['price'] as num?)?.toDouble()??0,paid:(j['paid'] as num?)?.toDouble()??0,sessions:(j['sessions'] as num?)?.toInt()??0,remaining:(j['remaining'] as num?)?.toInt()??0,startDate:j['startDate']??'',endDate:j['endDate']??'');
+  const PackageRecord({required this.id,required this.patientId,required this.name,required this.price,required this.paid,required this.sessions,required this.remaining,required this.startDate,required this.endDate,this.therapist=''});
+  Map<String,dynamic> toJson()=>{'id':id,'patientId':patientId,'name':name,'price':price,'paid':paid,'sessions':sessions,'remaining':remaining,'startDate':startDate,'endDate':endDate,'therapist':therapist};
+  factory PackageRecord.fromJson(Map<String,dynamic> j)=>PackageRecord(id:j['id']??'',patientId:j['patientId']??'',name:j['name']??'',price:(j['price'] as num?)?.toDouble()??0,paid:(j['paid'] as num?)?.toDouble()??0,sessions:(j['sessions'] as num?)?.toInt()??0,remaining:(j['remaining'] as num?)?.toInt()??0,startDate:j['startDate']??'',endDate:j['endDate']??'',therapist:j['therapist']??'');
 }
 class Invoice {
   final String id,patientId,number,date,status;
@@ -190,4 +190,12 @@ class SessionRecord {
   const SessionRecord({required this.id,required this.patientId,required this.packageId,required this.packageName,required this.date,required this.time,required this.therapist,this.status='حضر',this.notes=''});
   Map<String,dynamic> toJson()=>{'id':id,'patientId':patientId,'packageId':packageId,'packageName':packageName,'date':date,'time':time,'therapist':therapist,'status':status,'notes':notes};
   factory SessionRecord.fromJson(Map<String,dynamic> j)=>SessionRecord(id:j['id']??'',patientId:j['patientId']??'',packageId:j['packageId']??'',packageName:j['packageName']??'',date:j['date']??'',time:j['time']??'',therapist:j['therapist']??'',status:j['status']??'حضر',notes:j['notes']??'');
+}
+
+
+class ExaminationRecord {
+  final String id, patientId, date, complaint, history, diagnosis, treatment, notes, examiner, bloodPressure, temperature, weight;
+  const ExaminationRecord({required this.id,required this.patientId,required this.date,this.complaint='',this.history='',this.diagnosis='',this.treatment='',this.notes='',this.examiner='',this.bloodPressure='',this.temperature='',this.weight=''});
+  Map<String,dynamic> toJson()=>{'id':id,'patientId':patientId,'date':date,'complaint':complaint,'history':history,'diagnosis':diagnosis,'treatment':treatment,'notes':notes,'examiner':examiner,'bloodPressure':bloodPressure,'temperature':temperature,'weight':weight};
+  factory ExaminationRecord.fromJson(Map<String,dynamic> j)=>ExaminationRecord(id:j['id']?.toString()??'',patientId:j['patientId']?.toString()??'',date:j['date']?.toString()??'',complaint:j['complaint']?.toString()??'',history:j['history']?.toString()??'',diagnosis:j['diagnosis']?.toString()??'',treatment:j['treatment']?.toString()??'',notes:j['notes']?.toString()??'',examiner:j['examiner']?.toString()??'',bloodPressure:j['bloodPressure']?.toString()??'',temperature:j['temperature']?.toString()??'',weight:j['weight']?.toString()??'');
 }
