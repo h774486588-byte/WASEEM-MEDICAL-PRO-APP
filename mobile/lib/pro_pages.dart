@@ -233,7 +233,7 @@ class _StaffPageState extends State<StaffPage> {
    ),
   );
   if(ok==true&&name.text.trim().isNotEmpty){
-   final monthlySalary=salary.text.trim().isEmpty?0:(double.tryParse(salary.text.trim())??-1);
+   final monthlySalary=salary.text.trim().isEmpty?0.0:(double.tryParse(salary.text.trim())??-1.0);
    if(monthlySalary<0||!monthlySalary.isFinite){
     if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل راتباً شهرياً صحيحاً غير سالب.')));
    }else{
@@ -273,7 +273,7 @@ class _StaffPageState extends State<StaffPage> {
    ),
   );
   if(ok==true){
-   final value=salary.text.trim().isEmpty?0:(double.tryParse(salary.text.trim())??-1);
+   final value=salary.text.trim().isEmpty?0.0:(double.tryParse(salary.text.trim())??-1.0);
    if(name.text.trim().isEmpty||value<0||!value.isFinite){
     if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تحقق من الاسم والراتب.')));
    }else{
