@@ -1,8 +1,8 @@
 class Patient {
-  final String id,fileNo,name,phone,nationalId,birthDate,gender,department,service,doctor,address,notes,createdAt,notificationChannel;
-  const Patient({required this.id,required this.fileNo,required this.name,required this.phone,this.nationalId='',this.birthDate='',this.gender='ذكر',this.department='',this.service='',this.doctor='',this.address='',this.notes='',this.notificationChannel='النظام',required this.createdAt});
-  Map<String,dynamic> toJson()=>{'id':id,'fileNo':fileNo,'name':name,'phone':phone,'nationalId':nationalId,'birthDate':birthDate,'gender':gender,'department':department,'service':service,'doctor':doctor,'address':address,'notes':notes,'createdAt':createdAt,'notificationChannel':notificationChannel};
-  factory Patient.fromJson(Map<String,dynamic> j)=>Patient(id:j['id']??'',fileNo:j['fileNo']??'',name:j['name']??'',phone:j['phone']??'',nationalId:j['nationalId']??'',birthDate:j['birthDate']??'',gender:j['gender']??'ذكر',department:j['department']??'',service:j['service']??'',doctor:j['doctor']??'',address:j['address']??'',notes:j['notes']??'',createdAt:j['createdAt']??'',notificationChannel:j['notificationChannel']??'النظام');
+  final String id,fileNo,name,phone,nationalId,birthDate,gender,department,service,doctor,address,notes,createdAt,notificationChannel;\n  final int age;
+  const Patient({required this.id,required this.fileNo,required this.name,required this.phone,this.nationalId='',this.birthDate='',this.gender='ذكر',this.department='',this.service='',this.doctor='',this.address='',this.notes='',this.notificationChannel='النظام',this.age=0,required this.createdAt});
+  Map<String,dynamic> toJson()=>{'id':id,'fileNo':fileNo,'name':name,'phone':phone,'nationalId':nationalId,'birthDate':birthDate,'gender':gender,'department':department,'service':service,'doctor':doctor,'address':address,'notes':notes,'createdAt':createdAt,'notificationChannel':notificationChannel,'age':age};
+  factory Patient.fromJson(Map<String,dynamic> j)=>Patient(id:j['id']??'',fileNo:j['fileNo']??'',name:j['name']??'',phone:j['phone']??'',nationalId:j['nationalId']??'',birthDate:j['birthDate']??'',gender:j['gender']??'ذكر',department:j['department']??'',service:j['service']??'',doctor:j['doctor']??'',address:j['address']??'',notes:j['notes']??'',createdAt:j['createdAt']??'',notificationChannel:j['notificationChannel']??'النظام',age:(j['age'] as num?)?.toInt()??0);
 }
 class Appointment {
   final String id,patientId,date,time,doctor,status,notes;
@@ -27,22 +27,37 @@ class Invoice {
   factory Invoice.fromJson(Map<String,dynamic> j)=>Invoice(id:j['id']??'',patientId:j['patientId']??'',number:j['number']??'',total:(j['total'] as num?)?.toDouble()??0,paid:(j['paid'] as num?)?.toDouble()??0,date:j['date']??'',status:j['status']??'غير مدفوعة');
 }
 class AppNotification {
-  final String id,title,body,channel,status,date;
-  const AppNotification({required this.id,required this.title,required this.body,required this.channel,required this.status,required this.date});
-  Map<String,dynamic> toJson()=>{'id':id,'title':title,'body':body,'channel':channel,'status':status,'date':date};
-  factory AppNotification.fromJson(Map<String,dynamic> j)=>AppNotification(id:j['id']??'',title:j['title']??'',body:j['body']??'',channel:j['channel']??'',status:j['status']??'جاهز',date:j['date']??'');
+  final String id,title,body,channel,status,date,recipientPhone;
+  const AppNotification({required this.id,required this.title,required this.body,required this.channel,required this.status,required this.date,this.recipientPhone=''};
+  Map<String,dynamic> toJson()=>{'id':id,'title':title,'body':body,'channel':channel,'status':status,'date':date,'recipientPhone':recipientPhone};
+  factory AppNotification.fromJson(Map<String,dynamic> j)=>AppNotification(id:j['id']??'',title:j['title']??'',body:j['body']??'',channel:j['channel']??'',status:j['status']??'جاهز',date:j['date']??'',recipientPhone:j['recipientPhone']??'');
 }
 
 class InventoryItem {
  final String id,name,unit,code;
  final double quantity,cost;
- const InventoryItem({required this.id,required this.name,required this.unit,required this.code,required this.quantity,required this.cost});
- Map<String,dynamic> toJson()=>{'id':id,'name':name,'unit':unit,'code':code,'quantity':quantity,'cost':cost};
- factory InventoryItem.fromJson(Map<String,dynamic> j)=>InventoryItem(id:j['id']??'',name:j['name']??'',unit:j['unit']??'قطعة',code:j['code']??'',quantity:(j['quantity'] as num?)?.toDouble()??0,cost:(j['cost'] as num?)?.toDouble()??0);
+ const InventoryItem({required this.id,required this.name,required this.unit,required this.code,required this.quantity,required this.cost,this.sellPrice=0,this.supplierId=''};
+ Map<String,dynamic> toJson()=>{'id':id,'name':name,'unit':unit,'code':code,'quantity':quantity,'cost':cost,'sellPrice':sellPrice,'supplierId':supplierId};
+ factory InventoryItem.fromJson(Map<String,dynamic> j)=>InventoryItem(id:j['id']??'',name:j['name']??'',unit:j['unit']??'قطعة',code:j['code']??'',quantity:(j['quantity'] as num?)?.toDouble()??0,cost:(j['cost'] as num?)?.toDouble()??0,sellPrice:(j['sellPrice'] as num?)?.toDouble()??0,supplierId:j['supplierId']??'');
 }
 class StaffMember {
  final String id,name,role,phone;
  const StaffMember({required this.id,required this.name,required this.role,required this.phone});
  Map<String,dynamic> toJson()=>{'id':id,'name':name,'role':role,'phone':phone};
  factory StaffMember.fromJson(Map<String,dynamic> j)=>StaffMember(id:j['id']??'',name:j['name']??'',role:j['role']??'',phone:j['phone']??'');
+}
+
+class Supplier {
+ final String id,name,phone,address,notes;
+ const Supplier({required this.id,required this.name,this.phone='',this.address='',this.notes=''});
+ Map<String,dynamic> toJson()=>{'id':id,'name':name,'phone':phone,'address':address,'notes':notes};
+ factory Supplier.fromJson(Map<String,dynamic> j)=>Supplier(id:j['id']??'',name:j['name']??'',phone:j['phone']??'',address:j['address']??'',notes:j['notes']??'');
+}
+class InventorySale {
+ final String id,itemId,itemName,date;
+ final double quantity,unitPrice,total,costTotal;
+ const InventorySale({required this.id,required this.itemId,required this.itemName,required this.date,required this.quantity,required this.unitPrice,required this.total,required this.costTotal});
+ double get profit=>total-costTotal;
+ Map<String,dynamic> toJson()=>{'id':id,'itemId':itemId,'itemName':itemName,'date':date,'quantity':quantity,'unitPrice':unitPrice,'total':total,'costTotal':costTotal};
+ factory InventorySale.fromJson(Map<String,dynamic> j)=>InventorySale(id:j['id']??'',itemId:j['itemId']??'',itemName:j['itemName']??'',date:j['date']??'',quantity:(j['quantity'] as num?)?.toDouble()??0,unitPrice:(j['unitPrice'] as num?)?.toDouble()??0,total:(j['total'] as num?)?.toDouble()??0,costTotal:(j['costTotal'] as num?)?.toDouble()??0);
 }
