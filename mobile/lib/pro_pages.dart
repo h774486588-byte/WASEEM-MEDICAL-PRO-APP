@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'storage.dart';
+import 'models.dart';
 class ReportsPage extends StatelessWidget{
  const ReportsPage({super.key});
  Future<Map<String,num>> data()async{final p=await LocalStore.patients(),a=await LocalStore.appointments(),g=await LocalStore.packages(),i=await LocalStore.invoices();return {'patients':p.length,'appointments':a.length,'packages':g.length,'sessions':g.fold<num>(0,(s,x)=>s+x.sessions-x.remaining),'revenue':i.fold<num>(0,(s,x)=>s+x.paid),'outstanding':i.fold<num>(0,(s,x)=>s+x.remaining)};}
