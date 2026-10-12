@@ -317,9 +317,10 @@ class _PatientsPageState extends State<PatientsPage>{
 class PatientForm extends StatefulWidget{const PatientForm({super.key});@override State<PatientForm> createState()=>_PatientFormState();}
 class _PatientFormState extends State<PatientForm>{
   final name=TextEditingController(),phone=TextEditingController(),alternate=TextEditingController(),national=TextEditingController(),ageController=TextEditingController(),service=TextEditingController(),doctor=TextEditingController(),address=TextEditingController(),notes=TextEditingController();
-  String gender='ذكر',department='العلاج الطبيعي',channel='WhatsApp وSMS'; DateTime? birth;
+  String gender='ذكر',department='العلاج الطبيعي',channel='WhatsApp وSMS',nurse=''; DateTime? birth;
+  Future<List<StaffMember>> staffFuture=LocalStore.staff();
   Future<void> pickBirth()async{final d=await showDatePicker(context:context,initialDate:DateTime(2000),firstDate:DateTime(1900),lastDate:DateTime.now());if(d!=null)setState(()=>birth=d);}
-  Future<void> save()async{if(name.text.trim().isEmpty||phone.text.trim().isEmpty||ageController.text.trim().isEmpty||(int.tryParse(ageController.text.trim())??-1)<0){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل اسم المريض ورقم الهاتف والعمر الصحيح')));return;}final n=await LocalStore.nextPatientNumber();final extra=alternate.text.trim().isEmpty?'':'هاتف بديل: '+alternate.text.trim();final note=notes.text.trim();final p=Patient(id:idNow(),fileNo:'P-'+n.toString(),name:name.text.trim(),phone:phone.text.trim(),nationalId:national.text.trim(),birthDate:birth==null?'':dateOnly(birth!),age:int.tryParse(ageController.text.trim())??0,gender:gender,department:department,service:service.text.trim(),doctor:doctor.text.trim(),address:address.text.trim(),notes:extra+(extra.isNotEmpty&&note.isNotEmpty?'\n':'')+note,notificationChannel:channel,createdAt:dateOnly(DateTime.now()));Navigator.pop(context,p);}
+  Future<void> save()async{if(name.text.trim().isEmpty||phone.text.trim().isEmpty||ageController.text.trim().isEmpty||(int.tryParse(ageController.text.trim())??-1)<0){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل اسم المريض ورقم الهاتف والعمر الصحيح')));return;}final n=await LocalStore.nextPatientNumber();final extra=alternate.text.trim().isEmpty?'':'هاتف بديل: '+alternate.text.trim();final note=notes.text.trim();final p=Patient(id:idNow(),fileNo:'P-'+n.toString(),name:name.text.trim(),phone:phone.text.trim(),nationalId:national.text.trim(),birthDate:birth==null?'':dateOnly(birth!),age:int.tryParse(ageController.text.trim())??0,gender:gender,department:department,service:service.text.trim(),doctor:doctor.text.trim(),address:address.text.trim(),nurse:nurse,notes:extra+(extra.isNotEmpty&&note.isNotEmpty?'\n':'')+note,notificationChannel:channel,createdAt:dateOnly(DateTime.now()));Navigator.pop(context,p);}
   @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:const Text('تسجيل مريض جديد')),body:ListView(padding:const EdgeInsets.all(16),children:[
     TextField(controller:name,decoration:const InputDecoration(labelText:'اسم المريض *',prefixIcon:Icon(Icons.person_outline))),const SizedBox(height:10),
     TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'رقم الهاتف *',prefixIcon:Icon(Icons.phone))),const SizedBox(height:10),
@@ -331,6 +332,7 @@ class _PatientFormState extends State<PatientForm>{
     DropdownButtonFormField(value:department,decoration:const InputDecoration(labelText:'القسم'),items:['العلاج الطبيعي','العيادة','الأسنان','التمريض','أخرى'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setState(()=>department=v!)),const SizedBox(height:10),
     TextField(controller:service,decoration:const InputDecoration(labelText:'الخدمة / الشكوى',prefixIcon:Icon(Icons.medical_services_outlined))),const SizedBox(height:10),
     TextField(controller:doctor,decoration:const InputDecoration(labelText:'الطبيب / الأخصائي',prefixIcon:Icon(Icons.person_search_outlined))),const SizedBox(height:10),
+     FutureBuilder<List<StaffMember>>(future:staffFuture,builder:(context,s){final staff=s.data??[];return DropdownButtonFormField<String>(value:nurse,decoration:const InputDecoration(labelText:'الممرض المسؤول عن المريض',prefixIcon:Icon(Icons.medical_services_outlined)),items:[const DropdownMenuItem(value:'',child:Text('بدون إسناد')), ...staff.where((x)=>x.role.contains('ممرض')||x.role.contains('تمريض')||x.role.contains('ممرض/ة')||x.role.contains('ممرضة')).map((x)=>DropdownMenuItem(value:x.name,child:Text(x.name)))],onChanged:(v)=>setState(()=>nurse=v??''));}),const SizedBox(height:10),
     TextField(controller:address,decoration:const InputDecoration(labelText:'العنوان',prefixIcon:Icon(Icons.location_on_outlined))),const SizedBox(height:10),
     DropdownButtonFormField(value:channel,decoration:const InputDecoration(labelText:'قناة إشعار التسجيل'),items:['WhatsApp وSMS','WhatsApp','SMS','النظام','بدون'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setState(()=>channel=v!)),const SizedBox(height:10),
     TextField(controller:notes,maxLines:3,decoration:const InputDecoration(labelText:'ملاحظات')),const SizedBox(height:20),
@@ -398,7 +400,7 @@ class PatientDetails extends StatelessWidget{
           ]),
           const SizedBox(height:12),
           const Text('البيانات الأساسية',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
-          Info('رقم الملف',patient.fileNo),Info('رقم الهاتف',patient.phone),Info('الجنس',patient.gender),Info('العمر',patient.age>0?'${patient.age} سنة':''),Info('تاريخ الميلاد',patient.birthDate),Info('الخدمة / الشكوى',patient.service),Info('الطبيب / الأخصائي',patient.doctor),Info('العنوان',patient.address),Info('ملاحظات',patient.notes),
+          Info('رقم الملف',patient.fileNo),Info('رقم الهاتف',patient.phone),Info('الجنس',patient.gender),Info('العمر',patient.age>0?'${patient.age} سنة':''),Info('تاريخ الميلاد',patient.birthDate),Info('الخدمة / الشكوى',patient.service),Info('الطبيب / الأخصائي',patient.doctor),Info('الممرض المسؤول',patient.nurse),Info('العنوان',patient.address),Info('ملاحظات',patient.notes),
           const SizedBox(height:12),
           const Text('الباقات والجلسات',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
           if(patientPackages.isEmpty)const Card(child:ListTile(title:Text('لا توجد باقات مسجلة لهذا المريض'))),
@@ -618,7 +620,7 @@ class _PackagesPageState extends State<PackagesPage>{
       final patients=await LocalStore.patients();
       final patient=patients.where((p)=>p.id==current.patientId).firstOrNull;
       final history=await LocalStore.sessions();
-      history.add(SessionRecord(id:idNow(),patientId:current.patientId,packageId:current.id,packageName:current.name,date:dateOnly(DateTime.now()),time:sessionTime,therapist:current.therapist.isNotEmpty?current.therapist:(patient?.doctor??''),status:'حضر'));
+      history.add(SessionRecord(id:idNow(),patientId:current.patientId,packageId:current.id,packageName:current.name,date:dateOnly(DateTime.now()),time:sessionTime,therapist:current.therapist.isNotEmpty?current.therapist:(patient?.nurse.isNotEmpty==true?patient!.nurse:(patient?.doctor??'')),status:'حضر'));
       await LocalStore.saveSessions(history);
       final notifications=await LocalStore.notifications();
       if(patient!=null){
