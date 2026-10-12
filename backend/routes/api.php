@@ -1,12 +1,16 @@
 <?php
 
 use App\Http\Controllers\Api\AppointmentController;
+use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\PackageController;
+use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\SessionController;
+use App\Http\Controllers\Api\StaffController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', fn () => response()->json([
@@ -44,6 +48,22 @@ Route::middleware('auth:sanctum')->group(function (): void {
         ->only(['index', 'store', 'show'])
         ->middleware('role:owner,admin,reception,accountant');
     Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'recordPayment'])
+        ->middleware('role:owner,admin,accountant');
+
+    Route::apiResource('expenses', ExpenseController::class)
+        ->middleware('role:owner,admin,accountant');
+
+    Route::apiResource('staff', StaffController::class)
+        ->middleware('role:owner,admin');
+
+    Route::get('/attendance', [AttendanceController::class, 'index'])
+        ->middleware('role:owner,admin,reception');
+    Route::post('/staff/{staff}/attendance', [AttendanceController::class, 'store'])
+        ->middleware('role:owner,admin,reception');
+
+    Route::get('/payroll', [PayrollController::class, 'index'])
+        ->middleware('role:owner,admin,accountant');
+    Route::post('/staff/{staff}/payroll', [PayrollController::class, 'store'])
         ->middleware('role:owner,admin,accountant');
 
     Route::get('/reports/dashboard', ReportController::class)
