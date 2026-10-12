@@ -488,7 +488,17 @@ class _PackagesPageState extends State<PackagesPage>{
     final ps=await LocalStore.patients();
     if(ps.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أضف مريضاً أولاً')));return;}
     final r=await Navigator.push<PackageRecord>(context,MaterialPageRoute(builder:(_)=>PackageForm(patients:ps)));
-    if(r==null)return; final l=await LocalStore.packages(); l.add(r); await LocalStore.savePackages(l); setState((){}); widget.changed();
+    if(r==null)return;
+    final l=await LocalStore.packages(); l.add(r); await LocalStore.savePackages(l);
+    final patient=ps.where((p)=>p.id==r.patientId).firstOrNull;
+    if(patient!=null){
+      final message='مرحباً '+patient.name+'، تم تسجيل باقة '+r.name+' لك. عدد الجلسات: '+r.sessions.toString()+'. السعر: '+r.price.toStringAsFixed(2)+'. المدفوع: '+r.paid.toStringAsFixed(2)+'. الجلسات المتبقية: '+r.remaining.toString()+'.';
+      final ns=await LocalStore.notifications();
+      ns.insert(0,AppNotification(id:idNow(),title:'تسجيل باقة • SMS',body:message,channel:'SMS',status:'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:patient.phone));
+      ns.insert(0,AppNotification(id:idNow(),title:'تسجيل باقة • WhatsApp',body:message,channel:'WhatsApp',status:'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:patient.phone));
+      await LocalStore.saveNotifications(ns);
+    }
+    setState((){}); widget.changed();
   }
   Future<void> registerSession(PackageRecord item)async{
     if(item.remaining<=0){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('انتهت جلسات هذه الباقة')));return;}
