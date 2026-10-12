@@ -32,3 +32,17 @@ class AppNotification {
   Map<String,dynamic> toJson()=>{'id':id,'title':title,'body':body,'channel':channel,'status':status,'date':date};
   factory AppNotification.fromJson(Map<String,dynamic> j)=>AppNotification(id:j['id']??'',title:j['title']??'',body:j['body']??'',channel:j['channel']??'',status:j['status']??'جاهز',date:j['date']??'');
 }
+
+class InventoryItem {
+ final String id,name,unit,code;
+ final double quantity,cost;
+ const InventoryItem({required this.id,required this.name,required this.unit,required this.code,required this.quantity,required this.cost});
+ Map<String,dynamic> toJson()=>{'id':id,'name':name,'unit':unit,'code':code,'quantity':quantity,'cost':cost};
+ factory InventoryItem.fromJson(Map<String,dynamic> j)=>InventoryItem(id:j['id']??'',name:j['name']??'',unit:j['unit']??'قطعة',code:j['code']??'',quantity:(j['quantity'] as num?)?.toDouble()??0,cost:(j['cost'] as num?)?.toDouble()??0);
+}
+class StaffMember {
+ final String id,name,role,phone;
+ const StaffMember({required this.id,required this.name,required this.role,required this.phone});
+ Map<String,dynamic> toJson()=>{'id':id,'name':name,'role':role,'phone':phone};
+ factory StaffMember.fromJson(Map<String,dynamic> j)=>StaffMember(id:j['id']??'',name:j['name']??'',role:j['role']??'',phone:j['phone']??'');
+}
