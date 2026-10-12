@@ -416,6 +416,15 @@ class _AppointmentsPageState extends State<AppointmentsPage>{
     final message='مرحباً '+patient.name+'، تم حجز موعدك بتاريخ '+r.date+' الساعة '+r.time+'. المختص: '+(r.doctor.isEmpty?'سيتم تحديده لاحقاً':r.doctor)+'. نرجو الحضور في الموعد المحدد.';
     ns.insert(0,AppNotification(id:idNow(),title:'موعد جديد • SMS',body:message,channel:'SMS',status:'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:patient.phone));
     ns.insert(0,AppNotification(id:idNow(),title:'موعد جديد • WhatsApp',body:message,channel:'WhatsApp',status:'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:patient.phone));
+    if(r.doctor.trim().isNotEmpty){
+      final staff=await LocalStore.staff();
+      final specialist=staff.where((x)=>x.name.trim().toLowerCase()==r.doctor.trim().toLowerCase()).firstOrNull;
+      if(specialist!=null&&specialist.phone.trim().isNotEmpty){
+        final staffMessage='تم إسناد موعد جديد إليك. المريض: '+patient.name+'، رقم الملف: '+patient.fileNo+'، التاريخ: '+r.date+'، الوقت: '+r.time+'. يرجى مراجعة ملف الحالة من داخل النظام.';
+        ns.insert(0,AppNotification(id:idNow(),title:'إسناد حالة • SMS',body:staffMessage,channel:'SMS',status:'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:specialist.phone));
+        ns.insert(0,AppNotification(id:idNow(),title:'إسناد حالة • WhatsApp',body:staffMessage,channel:'WhatsApp',status:'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:specialist.phone));
+      }
+    }
     await LocalStore.saveNotifications(ns);
     setState((){});widget.changed();
   }
