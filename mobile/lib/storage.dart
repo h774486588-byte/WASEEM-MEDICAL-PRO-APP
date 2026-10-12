@@ -27,6 +27,12 @@ class LocalStore {
   static Future<List<InventoryItem>> inventory()=>read('inventory',InventoryItem.fromJson);
   static Future<void> saveInventory(List<InventoryItem> x)=>write('inventory',x,(v)=>v.toJson());
   static Future<List<StaffMember>> staff()=>read('staff',StaffMember.fromJson);
+  static Future<List<ExpenseRecord>> expenses()=>read('expenses',ExpenseRecord.fromJson);
+  static Future<void> saveExpenses(List<ExpenseRecord> x)=>write('expenses',x,(v)=>v.toJson());
+  static Future<List<AttendanceRecord>> attendance()=>read('attendance',AttendanceRecord.fromJson);
+  static Future<void> saveAttendance(List<AttendanceRecord> x)=>write('attendance',x,(v)=>v.toJson());
+  static Future<List<PayrollEntry>> payrollEntries()=>read('payroll_entries',PayrollEntry.fromJson);
+  static Future<void> savePayrollEntries(List<PayrollEntry> x)=>write('payroll_entries',x,(v)=>v.toJson());
   static Future<List<Supplier>> suppliers()=>read('suppliers',Supplier.fromJson);
   static Future<void> saveSuppliers(List<Supplier> x)=>write('suppliers',x,(v)=>v.toJson());
   static Future<List<InventorySale>> sales()=>read('inventory_sales',InventorySale.fromJson);
@@ -51,6 +57,9 @@ class LocalStore {
       'inventorySales':(await sales()).map((e)=>e.toJson()).toList(),
       'suppliers':(await suppliers()).map((e)=>e.toJson()).toList(),
       'staff':(await staff()).map((e)=>e.toJson()).toList(),
+      'expenses':(await expenses()).map((e)=>e.toJson()).toList(),
+      'attendance':(await attendance()).map((e)=>e.toJson()).toList(),
+      'payrollEntries':(await payrollEntries()).map((e)=>e.toJson()).toList(),
       'settings':await settings()
     };
   }
@@ -66,6 +75,9 @@ class LocalStore {
     if(x['inventorySales'] is List) await saveSales((x['inventorySales'] as List).map((e)=>InventorySale.fromJson(Map<String,dynamic>.from(e))).toList());
     if(x['suppliers'] is List) await saveSuppliers((x['suppliers'] as List).map((e)=>Supplier.fromJson(Map<String,dynamic>.from(e))).toList());
     if(x['staff'] is List) await saveStaff((x['staff'] as List).map((e)=>StaffMember.fromJson(Map<String,dynamic>.from(e))).toList());
+    if(x['expenses'] is List) await saveExpenses((x['expenses'] as List).map((e)=>ExpenseRecord.fromJson(Map<String,dynamic>.from(e))).toList());
+    if(x['attendance'] is List) await saveAttendance((x['attendance'] as List).map((e)=>AttendanceRecord.fromJson(Map<String,dynamic>.from(e))).toList());
+    if(x['payrollEntries'] is List) await savePayrollEntries((x['payrollEntries'] as List).map((e)=>PayrollEntry.fromJson(Map<String,dynamic>.from(e))).toList());
     if(x['settings'] is Map) await saveSettings(Map<String,String>.from(x['settings']));
   }
   static Future<Map<String,String>> settings() async { final p=await SharedPreferences.getInstance(); return {'name':p.getString('clinic_name')??'نظام وسيم الطبي PRO','phone':p.getString('clinic_phone')??'','address':p.getString('clinic_address')??'','whatsapp':p.getString('clinic_whatsapp')??'false','sms':p.getString('clinic_sms')??'false'}; }
