@@ -221,7 +221,7 @@ class _PatientFormState extends State<PatientForm>{
     DropdownButtonFormField(value:channel,decoration:const InputDecoration(labelText:'قناة إشعار التسجيل'),items:['النظام','WhatsApp','SMS','بدون'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setState(()=>channel=v!)),const SizedBox(height:10),
     TextField(controller:notes,maxLines:3,decoration:const InputDecoration(labelText:'ملاحظات')),const SizedBox(height:20),
     SizedBox(height:50,child:FilledButton.icon(onPressed:save,icon:const Icon(Icons.save),label:const Text('حفظ الملف')))
-  ]));
+  ])));
 }
 class PatientDetails extends StatelessWidget{
   final Patient patient;
@@ -278,7 +278,7 @@ class _AppointmentsPageState extends State<AppointmentsPage>{
           Container(width:68,padding:const EdgeInsets.symmetric(vertical:10),decoration:BoxDecoration(color:const Color(0xFFEAF4FF),borderRadius:BorderRadius.circular(13)),child:Text(x.time,textAlign:TextAlign.center,style:const TextStyle(color:Color(0xFF0869B9),fontWeight:FontWeight.bold))),
           const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(pname(x.patientId),style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16)),const SizedBox(height:4),Text(x.doctor.isEmpty?'بدون أخصائي محدد':x.doctor,style:const TextStyle(color:Colors.black54,fontSize:12)),if(x.notes.isNotEmpty)Text(x.notes,style:const TextStyle(color:Colors.black45,fontSize:11))])),
           PopupMenuButton<String>(tooltip:'تغيير حالة الموعد',onSelected:(v)async{final all=await LocalStore.appointments();final at=all.indexWhere((a)=>a.id==x.id);if(at<0)return;all[at]=Appointment(id:x.id,patientId:x.patientId,date:x.date,time:x.time,doctor:x.doctor,status:v,notes:x.notes);await LocalStore.saveAppointments(all);final ns=await LocalStore.notifications();ns.insert(0,AppNotification(id:idNow(),title:'تحديث حالة موعد',body:'تم تحديث موعد '+pname(x.patientId)+' بتاريخ '+x.date+' إلى الحالة: '+v,channel:'النظام',status:'تم التحديث',date:dateOnly(DateTime.now())));await LocalStore.saveNotifications(ns);if(mounted)setState((){});widget.changed();},itemBuilder:(_)=>['مؤكد','انتظار','تم الحضور','ملغي'].map((v)=>PopupMenuItem(value:v,child:Text(v))).toList(),child:Container(padding:const EdgeInsets.symmetric(horizontal:9,vertical:6),decoration:BoxDecoration(color:x.status=='مؤكد'?const Color(0xFFE8F8EF):const Color(0xFFFFF3DF),borderRadius:BorderRadius.circular(10)),child:Row(mainAxisSize:MainAxisSize.min,children:[Text(x.status),const Icon(Icons.arrow_drop_down,size:17)])))
-        ])))
+        ]))))
       ]))
     ]);
   });
@@ -302,7 +302,7 @@ class _AppointmentFormState extends State<AppointmentForm>{
     const SizedBox(height:12),DropdownButtonFormField(value:status,decoration:const InputDecoration(labelText:'الحالة'),items:['مؤكد','انتظار','تم الحضور','ملغي'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setState(()=>status=v!)),
     const SizedBox(height:12),TextField(controller:notes,maxLines:3,decoration:const InputDecoration(labelText:'ملاحظات')),
     const SizedBox(height:20),SizedBox(height:50,child:FilledButton.icon(onPressed:()=>Navigator.pop(c,Appointment(id:idNow(),patientId:pid,date:dateOnly(date),time:time.text.trim(),doctor:doctor.text.trim(),status:status,notes:notes.text.trim())),icon:const Icon(Icons.save),label:const Text('حفظ الموعد')))
-  ]));
+  ])));
 }
 class PackagesPage extends StatefulWidget{
   final VoidCallback changed;
@@ -366,7 +366,7 @@ class _PackageFormState extends State<PackageForm>{
     const SizedBox(height:10),TextField(controller:paid,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'المدفوع')),
     const SizedBox(height:10),TextField(controller:sessions,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'عدد الجلسات')),
     const SizedBox(height:20),SizedBox(height:50,child:FilledButton.icon(onPressed:(){final s=int.tryParse(sessions.text)??0;if(name.text.trim().isEmpty||s<=0){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل اسم الباقة وعدد جلسات صحيح')));return;}final p=double.tryParse(price.text)??0,paidValue=double.tryParse(paid.text)??0;if(p<0||paidValue<0||paidValue>p){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تحقق من السعر والمدفوع')));return;}Navigator.pop(c,PackageRecord(id:idNow(),patientId:pid,name:name.text.trim(),price:p,paid:paidValue,sessions:s,remaining:s,startDate:dateOnly(DateTime.now()),endDate:dateOnly(DateTime.now().add(const Duration(days:30)))));},icon:const Icon(Icons.save),label:const Text('حفظ الباقة')))
-  ]));
+  ])));
 }
 class InvoicesPage extends StatefulWidget{
   final VoidCallback changed;
@@ -428,7 +428,7 @@ class _InvoiceFormState extends State<InvoiceForm>{
     const SizedBox(height:12),TextField(controller:total,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'الإجمالي',prefixIcon:Icon(Icons.payments_outlined))),
     const SizedBox(height:12),TextField(controller:paid,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'المدفوع',prefixIcon:Icon(Icons.account_balance_wallet_outlined))),
     const SizedBox(height:20),SizedBox(height:50,child:FilledButton.icon(onPressed:(){final t=double.tryParse(total.text.trim())??-1,p=double.tryParse(paid.text.trim())??-1;if(t<=0||p<0||p>t){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تحقق من الإجمالي والمدفوع')));return;}Navigator.pop(c,Invoice(id:idNow(),patientId:pid,number:'INV-'+DateTime.now().millisecondsSinceEpoch.toString(),total:t,paid:p,date:dateOnly(DateTime.now()),status:p>=t?'مدفوعة':'جزئية'));},icon:const Icon(Icons.save),label:const Text('حفظ الفاتورة')))
-  ]));
+  ])));
 }
 class NotificationsPage extends StatefulWidget{
   const NotificationsPage({super.key});
