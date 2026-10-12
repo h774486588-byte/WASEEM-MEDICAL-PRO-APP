@@ -35,9 +35,9 @@ class AppNotification {
 }
 
 class InventoryItem {
- final String id,name,unit,code;
- final double quantity,cost;
- const InventoryItem({required this.id,required this.name,required this.unit,required this.code,required this.quantity,required this.cost,this.sellPrice=0,this.supplierId=''};
+ final String id,name,unit,code,supplierId;
+ final double quantity,cost,sellPrice;
+ const InventoryItem({required this.id,required this.name,required this.unit,required this.code,required this.quantity,required this.cost,this.sellPrice=0,this.supplierId=''});
  Map<String,dynamic> toJson()=>{'id':id,'name':name,'unit':unit,'code':code,'quantity':quantity,'cost':cost,'sellPrice':sellPrice,'supplierId':supplierId};
  factory InventoryItem.fromJson(Map<String,dynamic> j)=>InventoryItem(id:j['id']??'',name:j['name']??'',unit:j['unit']??'قطعة',code:j['code']??'',quantity:(j['quantity'] as num?)?.toDouble()??0,cost:(j['cost'] as num?)?.toDouble()??0,sellPrice:(j['sellPrice'] as num?)?.toDouble()??0,supplierId:j['supplierId']??'');
 }
