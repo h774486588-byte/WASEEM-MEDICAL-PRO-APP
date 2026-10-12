@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'models.dart';
 import 'storage.dart';
 import 'pro_pages.dart';
@@ -449,7 +450,7 @@ class _NotificationsPageState extends State<NotificationsPage>{
           leading:CircleAvatar(backgroundColor:x.channel=='WhatsApp'?const Color(0xFFEAFBF1):const Color(0xFFEAF4FF),child:Icon(x.channel=='WhatsApp'?Icons.chat_bubble_outline:Icons.notifications_none_rounded,color:x.channel=='WhatsApp'?const Color(0xFF15945A):const Color(0xFF0869B9))),
           title:Text(x.title,style:const TextStyle(fontWeight:FontWeight.bold)),
           subtitle:Text(x.body+'\\n'+x.date, maxLines:3,overflow:TextOverflow.ellipsis),
-          trailing:Text(x.status,style:const TextStyle(fontSize:11,color:Colors.black54))
+          trailing:Row(mainAxisSize:MainAxisSize.min,children:[Flexible(child:Text(x.status,style:const TextStyle(fontSize:10,color:Colors.black54),maxLines:2,overflow:TextOverflow.ellipsis)),IconButton(tooltip:'نسخ نص الرسالة',onPressed:()async{await Clipboard.setData(ClipboardData(text:x.body));if(c.mounted)ScaffoldMessenger.of(c).showSnackBar(const SnackBar(content:Text('تم نسخ نص الرسالة. يمكنك لصقه في WhatsApp أو SMS.')));},icon:const Icon(Icons.copy_outlined,size:19))])
         )))
       ]))
     ]);
