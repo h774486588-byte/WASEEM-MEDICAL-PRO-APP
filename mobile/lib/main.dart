@@ -69,7 +69,20 @@ class _DashboardState extends State<Dashboard>{
           Row(children:[Container(width:54,height:54,decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(16)),child:const Icon(Icons.favorite_border_rounded,size:34,color:Color(0xFF0869B9))),const SizedBox(width:12),const Expanded(child:Text('مركز وسيم الطبي\nWASEEM MEDICAL CENTER',style:TextStyle(color:Colors.white,fontSize:17,fontWeight:FontWeight.bold)))]),
           const SizedBox(height:8),const Text('نظام إدارة المركز الطبي PRO',style:TextStyle(color:Colors.white70))
         ])),
-        for(int i=0;i<names.length;i++)ListTile(selected:index==i,selectedColor:const Color(0xFF0869B9),leading:Icon([Icons.home_rounded,Icons.people_alt_rounded,Icons.calendar_month_rounded,Icons.layers_rounded,Icons.receipt_long_rounded,Icons.notifications_rounded,Icons.bar_chart_rounded,Icons.settings_rounded][i]),title:Text(names[i],style:const TextStyle(fontWeight:FontWeight.w600)),onTap:(){go(i);Navigator.pop(context);}})
+        for (int i = 0; i < names.length; i++)
+          ListTile(
+            selected: index == i,
+            selectedColor: const Color(0xFF0869B9),
+            leading: Icon([
+              Icons.home_rounded, Icons.people_alt_rounded,
+              Icons.calendar_month_rounded, Icons.layers_rounded,
+              Icons.receipt_long_rounded, Icons.notifications_rounded,
+              Icons.bar_chart_rounded, Icons.settings_rounded,
+              Icons.inventory_2_rounded, Icons.groups_rounded,
+            ][i]),
+            title: Text(names[i], style: const TextStyle(fontWeight: FontWeight.w600)),
+            onTap: () { go(i); Navigator.pop(context); },
+          ),
       ])),
       body:pages[index],
       bottomNavigationBar: index<6 ? NavigationBar(
@@ -134,13 +147,89 @@ class HomePage extends StatelessWidget{
       SliverToBoxAdapter(child:Padding(padding:const EdgeInsets.fromLTRB(16,24,16,10),child:Row(children:[const Expanded(child:Text('مواعيد اليوم',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold,color:Color(0xFF12395C)))),TextButton(onPressed:()=>open(2),child:const Text('عرض الكل'))]))),
       SliverPadding(padding:const EdgeInsets.fromLTRB(16,0,16,24),sliver:SliverList(delegate:SliverChildListDelegate([
         if(apps.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(24),child:Center(child:Text('لا توجد مواعيد اليوم')))),
-        ...apps.take(5).map((x)=>Card(margin:const EdgeInsets.only(bottom:8),child:ListTile(leading:CircleAvatar(backgroundColor:const Color(0xFFE8F3FF),child:const Icon(Icons.person,color:Color(0xFF0876D1))),title:Text(pname(x.patientId),style:const TextStyle(fontWeight:FontWeight.bold)),subtitle:Text(x.time+' • '+x.doctor),trailing:Container(padding:const EdgeInsets.symmetric(horizontal:10,vertical:6),decoration:BoxDecoration(color:x.status=='مؤكد'?const Color(0xFFE8F8EF):const Color(0xFFFFF3DF),borderRadius:BorderRadius.circular(10)),child:Text(x.status.isEmpty?'مؤكد':x.status)))
+        ...apps.take(5).map((x) => Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Color(0xFFE8F3FF),
+              child: Icon(Icons.person, color: Color(0xFF0876D1)),
+            ),
+            title: Text(pname(x.patientId), style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('${x.time} • ${x.doctor}'),
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: x.status == 'مؤكد' ? const Color(0xFFE8F8EF) : const Color(0xFFFFF3DF),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(x.status.isEmpty ? 'مؤكد' : x.status),
+            ),
+          ),
+        )),
       ])))
     ]);
   });
 }
-class _DashStat extends StatelessWidget{final String title,value;final IconData icon;final Color bg,fg;const _DashStat(this.title,this.value,this.icon,this.bg,this.fg);@override Widget build(BuildContext c)=>Card(elevation:0,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(18)),child:Container(padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:bg,borderRadius:BorderRadius.circular(18)),child:Row(children:[Icon(icon,color:fg,size:30),const SizedBox(width:9),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[Text(value,style:TextStyle(fontSize:22,fontWeight:FontWeight.bold,color:fg),maxLines:1),Text(title,style:const TextStyle(fontSize:11,color:Color(0xFF456174)),maxLines:2)])])));}
-class _QuickTile extends StatelessWidget{final String title,sub;final IconData icon;final Color color;final VoidCallback tap;const _QuickTile(this.title,this.sub,this.icon,this.color,this.tap);@override Widget build(BuildContext c)=>Card(elevation:0,child:InkWell(borderRadius:BorderRadius.circular(18),onTap:tap,child:Padding(padding:const EdgeInsets.all(13),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[Container(width:44,height:44,decoration:BoxDecoration(color:color.withOpacity(.12),borderRadius:BorderRadius.circular(13)),child:Icon(icon,color:color)),const SizedBox(height:9),Text(title,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:15)),const SizedBox(height:2),Text(sub,style:const TextStyle(fontSize:11,color:Colors.black54))])));}
+class _DashStat extends StatelessWidget {
+  final String title, value;
+  final IconData icon;
+  final Color bg, fg;
+  const _DashStat(this.title, this.value, this.icon, this.bg, this.fg);
+  @override
+  Widget build(BuildContext c) => Card(
+    elevation: 0,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    child: Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(18)),
+      child: Row(children: [
+        Icon(icon, color: fg, size: 30),
+        const SizedBox(width: 9),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: fg), maxLines: 1),
+            Text(title, style: const TextStyle(fontSize: 11, color: Color(0xFF456174)), maxLines: 2),
+          ],
+        )),
+      ]),
+    ),
+  );
+}
+class _QuickTile extends StatelessWidget {
+  final String title, sub;
+  final IconData icon;
+  final Color color;
+  final VoidCallback tap;
+  const _QuickTile(this.title, this.sub, this.icon, this.color, this.tap);
+  @override
+  Widget build(BuildContext c) => Card(
+    elevation: 0,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: tap,
+      child: Padding(
+        padding: const EdgeInsets.all(13),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(color: color.withOpacity(.12), borderRadius: BorderRadius.circular(13)),
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(height: 9),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(height: 2),
+            Text(sub, style: const TextStyle(fontSize: 11, color: Colors.black54)),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 class PatientsPage extends StatefulWidget{
   final VoidCallback changed;
   const PatientsPage({super.key,required this.changed});
