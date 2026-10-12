@@ -152,7 +152,10 @@ class _PatientsPageState extends State<PatientsPage>{
     if(r==null)return;
     final list=await LocalStore.patients();list.add(r);await LocalStore.savePatients(list);
     final ns=await LocalStore.notifications();
-    ns.insert(0,AppNotification(id:idNow(),title:'تسجيل مريض جديد',body:'تم تسجيل '+r.name+' برقم الملف '+r.fileNo,channel:'النظام',status:'جاهز',date:dateOnly(DateTime.now())));
+    final settings=await LocalStore.settings();
+    final channel=r.notificationChannel;
+    final message='مرحباً بك في '+(settings['name']??'مركز وسيم الطبي')+' 🌷\\nتم تسجيل ملفك بنجاح.\\nرقم الملف: '+r.fileNo+'\\nنتمنى لك دوام الصحة والعافية.\\n'+(settings['name']??'مركز وسيم الطبي')+'\\n'+(settings['phone']??'');
+    if(channel!='بدون') ns.insert(0,AppNotification(id:idNow(),title:'تسجيل مريض جديد',body:message,channel:channel,status:channel=='النظام'?'تم التسجيل':'جاهز للإرسال - يتطلب ربط مزود الإرسال',date:dateOnly(DateTime.now())));
     await LocalStore.saveNotifications(ns);
     setState((){});widget.changed();
   }
@@ -201,7 +204,7 @@ class _PatientFormState extends State<PatientForm>{
   String gender='ذكر',department='العلاج الطبيعي',channel='النظام'; DateTime? birth;
   Future<void> pickBirth()async{final d=await showDatePicker(context:context,initialDate:DateTime(2000),firstDate:DateTime(1900),lastDate:DateTime.now());if(d!=null)setState(()=>birth=d);}
   int? age(){if(birth==null)return null;final now=DateTime.now();var a=now.year-birth!.year;if(now.month<birth!.month||(now.month==birth!.month&&now.day<birth!.day))a--;return a;}
-  Future<void> save()async{if(name.text.trim().isEmpty||phone.text.trim().isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل اسم المريض ورقم الهاتف')));return;}final n=await LocalStore.nextPatientNumber();final extra=alternate.text.trim().isEmpty?'':'هاتف بديل: '+alternate.text.trim();final note=notes.text.trim();final p=Patient(id:idNow(),fileNo:'P-'+n.toString(),name:name.text.trim(),phone:phone.text.trim(),nationalId:national.text.trim(),birthDate:birth==null?'':dateOnly(birth!),gender:gender,department:department,service:service.text.trim(),doctor:doctor.text.trim(),address:address.text.trim(),notes:extra+(extra.isNotEmpty&&note.isNotEmpty?'\n':'')+note,createdAt:dateOnly(DateTime.now()));Navigator.pop(context,p);}
+  Future<void> save()async{if(name.text.trim().isEmpty||phone.text.trim().isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل اسم المريض ورقم الهاتف')));return;}final n=await LocalStore.nextPatientNumber();final extra=alternate.text.trim().isEmpty?'':'هاتف بديل: '+alternate.text.trim();final note=notes.text.trim();final p=Patient(id:idNow(),fileNo:'P-'+n.toString(),name:name.text.trim(),phone:phone.text.trim(),nationalId:national.text.trim(),birthDate:birth==null?'':dateOnly(birth!),gender:gender,department:department,service:service.text.trim(),doctor:doctor.text.trim(),address:address.text.trim(),notes:extra+(extra.isNotEmpty&&note.isNotEmpty?'\n':'')+note,notificationChannel:channel,createdAt:dateOnly(DateTime.now()));Navigator.pop(context,p);}
   @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:const Text('تسجيل مريض جديد')),body:ListView(padding:const EdgeInsets.all(16),children:[
     TextField(controller:name,decoration:const InputDecoration(labelText:'اسم المريض *',prefixIcon:Icon(Icons.person_outline))),const SizedBox(height:10),
     TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'رقم الهاتف *',prefixIcon:Icon(Icons.phone))),const SizedBox(height:10),
