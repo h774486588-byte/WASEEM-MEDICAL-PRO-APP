@@ -245,6 +245,49 @@ class _StaffPageState extends State<StaffPage> {
   }
   name.dispose();role.dispose();phone.dispose();salary.dispose();
  }
+ Future<void> _edit(StaffMember person) async {
+  final name=TextEditingController(text:person.name);
+  final role=TextEditingController(text:person.role);
+  final phone=TextEditingController(text:person.phone);
+  final salary=TextEditingController(text:person.monthlySalary.toStringAsFixed(2));
+  final ok=await showDialog<bool>(
+   context:context,
+   builder:(ctx)=>Directionality(
+    textDirection:TextDirection.rtl,
+    child:AlertDialog(
+     title:Text('تعديل بيانات • ${person.name}'),
+     content:SizedBox(width:420,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+      TextField(controller:name,decoration:const InputDecoration(labelText:'الاسم *')),
+      const SizedBox(height:8),
+      TextField(controller:role,decoration:const InputDecoration(labelText:'التخصص / الوظيفة')),
+      const SizedBox(height:8),
+      TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'رقم الهاتف')),
+      const SizedBox(height:8),
+      TextField(controller:salary,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'الراتب الشهري الأساسي')),
+     ]))),
+     actions:[
+      TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),
+      FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('حفظ التعديلات')),
+     ],
+    ),
+   ),
+  );
+  if(ok==true){
+   final value=salary.text.trim().isEmpty?0:(double.tryParse(salary.text.trim())??-1);
+   if(name.text.trim().isEmpty||value<0||!value.isFinite){
+    if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تحقق من الاسم والراتب.')));
+   }else{
+    final list=await LocalStore.staff();
+    final index=list.indexWhere((x)=>x.id==person.id);
+    if(index>=0){
+     list[index]=StaffMember(id:person.id,name:name.text.trim(),role:role.text.trim(),phone:phone.text.trim(),monthlySalary:value);
+     await LocalStore.saveStaff(list);
+     if(mounted){setState((){});ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم تحديث بيانات الموظف.')));}
+    }
+   }
+  }
+  name.dispose();role.dispose();phone.dispose();salary.dispose();
+ }
  Future<void> _delete(StaffMember person)async{
   final confirm=await showDialog<bool>(context:context,builder:(ctx)=>Directionality(textDirection:TextDirection.rtl,child:AlertDialog(
    title:const Text('حذف عضو الطاقم؟'),
@@ -266,7 +309,10 @@ class _StaffPageState extends State<StaffPage> {
     title:Text(person.name,style:const TextStyle(fontWeight:FontWeight.bold)),
     subtitle:Text('${person.role.isEmpty?'بدون تخصص محدد':person.role}${person.phone.isEmpty?'':' • '+person.phone}\nالراتب الشهري: ${person.monthlySalary.toStringAsFixed(2)}'),
     isThreeLine:true,
-    trailing:IconButton(onPressed:()=>_delete(person),icon:const Icon(Icons.delete_outline,color:Colors.red)),
+    trailing:Row(mainAxisSize:MainAxisSize.min,children:[
+     IconButton(tooltip:'تعديل بيانات الموظف',onPressed:()=>_edit(person),icon:const Icon(Icons.edit_outlined)),
+     IconButton(tooltip:'حذف الموظف',onPressed:()=>_delete(person),icon:const Icon(Icons.delete_outline,color:Colors.red)),
+    ]),
    )),
   ]);
  });
