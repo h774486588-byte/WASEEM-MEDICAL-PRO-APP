@@ -376,7 +376,7 @@ class PatientDetails extends StatelessWidget{
           const SizedBox(height:12),
           const Text('الباقات والجلسات',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
           if(patientPackages.isEmpty)const Card(child:ListTile(title:Text('لا توجد باقات مسجلة لهذا المريض'))),
-          ...patientPackages.map((p)=>Card(child:ListTile(leading:const Icon(Icons.layers_outlined),title:Text(p.name),subtitle:Text('السعر: ${p.price.toStringAsFixed(2)} • المدفوع: ${p.paid.toStringAsFixed(2)}'),trailing:Text('${p.remaining}/${p.sessions}',style:const TextStyle(fontWeight:FontWeight.bold,color:Color(0xFF0869B9))))),
+          ...patientPackages.map((p)=>Card(child:ListTile(leading:const Icon(Icons.layers_outlined),title:Text(p.name),subtitle:Text('السعر: ${p.price.toStringAsFixed(2)} • المدفوع: ${p.paid.toStringAsFixed(2)}'),trailing:Text('${p.remaining}/${p.sessions}',style:const TextStyle(fontWeight:FontWeight.bold,color:Color(0xFF0869B9))))))),
           const SizedBox(height:12),
           const Text('الفواتير والحركة المالية',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
           if(patientInvoices.isEmpty)const Card(child:ListTile(title:Text('لا توجد فواتير مسجلة'))),
