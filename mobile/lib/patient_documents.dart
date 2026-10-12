@@ -18,6 +18,7 @@ String patientReportText(Patient p, {List<PackageRecord> packages=const [], List
   b.writeln('القسم: ${p.department}');
   b.writeln('الخدمة/الشكوى: ${p.service}');
   b.writeln('الطبيب/الأخصائي: ${p.doctor}');
+  b.writeln('الممرض المسؤول: ${p.nurse}');
   b.writeln('العنوان: ${p.address}');
   b.writeln('تاريخ التسجيل: ${p.createdAt}');
   b.writeln('ملاحظات: ${p.notes}');
