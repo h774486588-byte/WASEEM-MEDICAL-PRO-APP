@@ -500,31 +500,45 @@ class _PackagesPageState extends State<PackagesPage>{
     }
     setState((){}); widget.changed();
   }
-  Future<void> registerSession(PackageRecord item)async{
-    if(item.remaining<=0){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('انتهت جلسات هذه الباقة')));return;}
-    final list=await LocalStore.packages(); final i=list.indexWhere((x)=>x.id==item.id); if(i<0)return;
-    final left=item.remaining-1;
-    list[i]=PackageRecord(id:item.id,patientId:item.patientId,name:item.name,price:item.price,paid:item.paid,sessions:item.sessions,remaining:left,startDate:item.startDate,endDate:item.endDate);
-    await LocalStore.savePackages(list);
-    final patientForSession=(await LocalStore.patients()).where((p)=>p.id==item.patientId).firstOrNull;
-    final history=await LocalStore.sessions();
-    history.add(SessionRecord(id:idNow(),patientId:item.patientId,packageId:item.id,packageName:item.name,date:dateOnly(DateTime.now()),time:TimeOfDay.now().format(context),therapist:patientForSession?.doctor??'',status:'حضر'));
-    await LocalStore.saveSessions(history);
-    final ns=await LocalStore.notifications();
-    final patients=await LocalStore.patients();
-    final patient=patients.where((p)=>p.id==item.patientId).firstOrNull;
-    if(patient!=null){
-      final message='مرحباً '+patient.name+'، تم تسجيل حضور جلستك العلاجية وخصم جلسة واحدة من باقة '+item.name+'. الجلسات المتبقية: '+left.toString()+' من '+item.sessions.toString()+'.';
-      ns.insert(0,AppNotification(id:idNow(),title:'خصم جلسة • SMS',body:message,channel:'SMS',status:'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:patient.phone));
-      ns.insert(0,AppNotification(id:idNow(),title:'خصم جلسة • WhatsApp',body:message,channel:'WhatsApp',status:'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:patient.phone));
-      if(left<=2){
-        final alert=left==0?'انتهت جميع جلسات باقة '+item.name:'تنبيه: تبقى '+left.toString()+' جلسة من باقة '+item.name;
-        ns.insert(0,AppNotification(id:idNow(),title:'تنبيه رصيد الباقة',body:alert,channel:'النظام',status:'جاهز',date:dateOnly(DateTime.now()),recipientPhone:patient.phone));
+  final Set<String> _processingSessions=<String>{};
+  Future<void> registerSession(PackageRecord item) async {
+    if(!_processingSessions.add(item.id)) return;
+    final sessionTime=TimeOfDay.now().format(context);
+    if(mounted)setState((){});
+    try {
+      final list=await LocalStore.packages();
+      final index=list.indexWhere((x)=>x.id==item.id);
+      if(index<0) return;
+      final current=list[index];
+      if(current.remaining<=0){
+        if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('انتهت جلسات هذه الباقة')));
+        return;
       }
+      final left=current.remaining-1;
+      list[index]=PackageRecord(id:current.id,patientId:current.patientId,name:current.name,price:current.price,paid:current.paid,sessions:current.sessions,remaining:left,startDate:current.startDate,endDate:current.endDate);
+      await LocalStore.savePackages(list);
+      final patients=await LocalStore.patients();
+      final patient=patients.where((p)=>p.id==current.patientId).firstOrNull;
+      final history=await LocalStore.sessions();
+      history.add(SessionRecord(id:idNow(),patientId:current.patientId,packageId:current.id,packageName:current.name,date:dateOnly(DateTime.now()),time:sessionTime,therapist:patient?.doctor??'',status:'حضر'));
+      await LocalStore.saveSessions(history);
+      final notifications=await LocalStore.notifications();
+      if(patient!=null){
+        final message='مرحباً '+patient.name+'، تم تسجيل حضور جلستك العلاجية وخصم جلسة واحدة من باقة '+current.name+'. الجلسات المتبقية: '+left.toString()+' من '+current.sessions.toString()+'.';
+        notifications.insert(0,AppNotification(id:idNow(),title:'خصم جلسة • SMS',body:message,channel:'SMS',status:'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:patient.phone));
+        notifications.insert(0,AppNotification(id:idNow(),title:'خصم جلسة • WhatsApp',body:message,channel:'WhatsApp',status:'جاهز للإرسال',date:dateOnly(DateTime.now()),recipientPhone:patient.phone));
+        if(left<=2){
+          final alert=left==0?'انتهت جميع جلسات باقة '+current.name:'تنبيه: تبقى '+left.toString()+' جلسة من باقة '+current.name;
+          notifications.insert(0,AppNotification(id:idNow(),title:'تنبيه رصيد الباقة',body:alert,channel:'النظام',status:'جاهز',date:dateOnly(DateTime.now()),recipientPhone:patient.phone));
+        }
+      }
+      await LocalStore.saveNotifications(notifications);
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تم تسجيل الجلسة • المتبقي '+left.toString())));
+      widget.changed();
+    } finally {
+      _processingSessions.remove(item.id);
+      if(mounted)setState((){});
     }
-    await LocalStore.saveNotifications(ns);
-    setState((){}); widget.changed();
-    if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تم تسجيل الجلسة • المتبقي '+left.toString())));
   }
   @override Widget build(BuildContext c)=>FutureBuilder(future:Future.wait([LocalStore.packages(),LocalStore.patients()]),builder:(c,s){
     if(!s.hasData)return const Center(child:CircularProgressIndicator());
@@ -543,7 +557,7 @@ class _PackagesPageState extends State<PackagesPage>{
           const SizedBox(height:12),
           ClipRRect(borderRadius:BorderRadius.circular(8),child:LinearProgressIndicator(value:x.sessions<=0?0:x.remaining/x.sessions,minHeight:8,backgroundColor:const Color(0xFFE8EEF5))),
           const SizedBox(height:8),
-          Row(children:[Expanded(child:Text('المتبقي '+x.remaining.toString()+' من '+x.sessions.toString()+' جلسة',style:const TextStyle(fontSize:12,color:Colors.black54))),FilledButton.tonalIcon(onPressed:()=>registerSession(x),icon:const Icon(Icons.check_circle_outline),label:const Text('تسجيل جلسة'))])
+          Row(children:[Expanded(child:Text('المتبقي '+x.remaining.toString()+' من '+x.sessions.toString()+' جلسة',style:const TextStyle(fontSize:12,color:Colors.black54))),FilledButton.tonalIcon(onPressed:_processingSessions.contains(x.id)?null:()=>registerSession(x),icon:const Icon(Icons.check_circle_outline),label:Text(_processingSessions.contains(x.id)?'جارٍ الحفظ...':'تسجيل جلسة'))])
          ]))))
       ]))
     ]);
