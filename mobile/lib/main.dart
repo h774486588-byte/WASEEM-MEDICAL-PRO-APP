@@ -376,16 +376,63 @@ class PatientDetails extends StatelessWidget{
           const SizedBox(height:12),
           const Text('الباقات والجلسات',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
           if(patientPackages.isEmpty)const Card(child:ListTile(title:Text('لا توجد باقات مسجلة لهذا المريض'))),
-          ...patientPackages.map((p)=>Card(child:ListTile(leading:const Icon(Icons.layers_outlined),title:Text(p.name),subtitle:Text('السعر: ${p.price.toStringAsFixed(2)} • المدفوع: ${p.paid.toStringAsFixed(2)}'),trailing:Text('${p.remaining}/${p.sessions}',style:const TextStyle(fontWeight:FontWeight.bold,color:Color(0xFF0869B9))))))),
-          const SizedBox(height:12),
-          const Text('الفواتير والحركة المالية',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
-          if(patientInvoices.isEmpty)const Card(child:ListTile(title:Text('لا توجد فواتير مسجلة'))),
-          ...patientInvoices.map((i)=>Card(child:ListTile(leading:const Icon(Icons.receipt_long_outlined),title:Text('فاتورة ${i.number}'),subtitle:Text('التاريخ: ${i.date} • الحالة: ${i.status}'),trailing:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.end,children:[Text('إجمالي ${i.total.toStringAsFixed(2)}'),Text('متبقي ${i.remaining.toStringAsFixed(2)}',style:TextStyle(color:i.remaining>0?Colors.red:Colors.green,fontWeight:FontWeight.bold))])))),
-          const SizedBox(height:12),
-          const Text('سجل الجلسات المنفذة',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
-          if(patientSessions.isEmpty)const Card(child:ListTile(title:Text('لا يوجد سجل جلسات بعد'))),
-          ...patientSessions.map((x)=>Card(child:ListTile(leading:const Icon(Icons.event_available_outlined,color:Color(0xFF16845B)),title:Text(x.packageName),subtitle:Text('التاريخ: ${x.date} • الوقت: ${x.time} • المختص: ${x.therapist.isEmpty?'غير محدد':x.therapist}'),trailing:Text(x.status,style:const TextStyle(color:Color(0xFF16845B),fontWeight:FontWeight.bold))))),
-          if(s.connectionState==ConnectionState.waiting)const Center(child:Padding(padding:EdgeInsets.all(12),child:CircularProgressIndicator()))
+          ...patientPackages.map((p) {
+            return Card(
+              child: ListTile(
+                leading: const Icon(Icons.layers_outlined),
+                title: Text(p.name),
+                subtitle: Text('السعر: ${p.price.toStringAsFixed(2)} • المدفوع: ${p.paid.toStringAsFixed(2)}'),
+                trailing: Text(
+                  '${p.remaining}/${p.sessions}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0869B9),
+                  ),
+                ),
+              ),
+            );
+          }),
+          ...patientInvoices.map((i) {
+            return Card(
+              child: ListTile(
+                leading: const Icon(Icons.receipt_long_outlined),
+                title: Text('فاتورة ${i.number}'),
+                subtitle: Text('التاريخ: ${i.date} • الحالة: ${i.status}'),
+                trailing: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('إجمالي ${i.total.toStringAsFixed(2)}'),
+                    Text(
+                      'متبقي ${i.remaining.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: i.remaining > 0 ? Colors.red : Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          ...patientSessions.map((x) {
+            return Card(
+              child: ListTile(
+                leading: const Icon(Icons.event_available_outlined, color: Color(0xFF16845B)),
+                title: Text(x.packageName),
+                subtitle: Text(
+                  'التاريخ: ${x.date} • الوقت: ${x.time} • المختص: ${x.therapist.isEmpty ? 'غير محدد' : x.therapist}',
+                ),
+                trailing: Text(
+                  x.status,
+                  style: const TextStyle(
+                    color: Color(0xFF16845B),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            );
+          }),
         ]);
       }
     )
