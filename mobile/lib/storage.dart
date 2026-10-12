@@ -17,6 +17,8 @@ class LocalStore {
   static Future<void> saveAppointments(List<Appointment> x)=>write('appointments',x,(v)=>v.toJson());
   static Future<List<PackageRecord>> packages()=>read('packages',PackageRecord.fromJson);
   static Future<void> savePackages(List<PackageRecord> x)=>write('packages',x,(v)=>v.toJson());
+  static Future<List<SessionRecord>> sessions()=>read('sessions',SessionRecord.fromJson);
+  static Future<void> saveSessions(List<SessionRecord> x)=>write('sessions',x,(v)=>v.toJson());
   static Future<List<Invoice>> invoices()=>read('invoices',Invoice.fromJson);
   static Future<void> saveInvoices(List<Invoice> x)=>write('invoices',x,(v)=>v.toJson());
   static Future<List<AppNotification>> notifications()=>read('notifications',AppNotification.fromJson);
@@ -39,6 +41,7 @@ class LocalStore {
       'patients':(await patients()).map((e)=>e.toJson()).toList(),
       'appointments':(await appointments()).map((e)=>e.toJson()).toList(),
       'packages':(await packages()).map((e)=>e.toJson()).toList(),
+      'sessions':(await sessions()).map((e)=>e.toJson()).toList(),
       'invoices':(await invoices()).map((e)=>e.toJson()).toList(),
       'notifications':(await notifications()).map((e)=>e.toJson()).toList(),
       'inventory':(await inventory()).map((e)=>e.toJson()).toList(),
@@ -52,6 +55,7 @@ class LocalStore {
     if(x['patients'] is List) await savePatients((x['patients'] as List).map((e)=>Patient.fromJson(Map<String,dynamic>.from(e))).toList());
     if(x['appointments'] is List) await saveAppointments((x['appointments'] as List).map((e)=>Appointment.fromJson(Map<String,dynamic>.from(e))).toList());
     if(x['packages'] is List) await savePackages((x['packages'] as List).map((e)=>PackageRecord.fromJson(Map<String,dynamic>.from(e))).toList());
+    if(x['sessions'] is List) await saveSessions((x['sessions'] as List).map((e)=>SessionRecord.fromJson(Map<String,dynamic>.from(e))).toList());
     if(x['invoices'] is List) await saveInvoices((x['invoices'] as List).map((e)=>Invoice.fromJson(Map<String,dynamic>.from(e))).toList());
     if(x['notifications'] is List) await saveNotifications((x['notifications'] as List).map((e)=>AppNotification.fromJson(Map<String,dynamic>.from(e))).toList());
     if(x['inventory'] is List) await saveInventory((x['inventory'] as List).map((e)=>InventoryItem.fromJson(Map<String,dynamic>.from(e))).toList());
