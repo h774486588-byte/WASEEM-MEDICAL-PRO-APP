@@ -39,3 +39,38 @@ class _SettingsPageState extends State<SettingsPage>{final name=TextEditingContr
  }
  @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:const Text('إعدادات المركز')),body:ListView(padding:const EdgeInsets.all(16),children:[TextField(controller:name,decoration:const InputDecoration(labelText:'اسم المركز',prefixIcon:Icon(Icons.business))),const SizedBox(height:12),TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'رقم التواصل',prefixIcon:Icon(Icons.phone))),const SizedBox(height:12),TextField(controller:address,decoration:const InputDecoration(labelText:'العنوان',prefixIcon:Icon(Icons.location_on))),const SizedBox(height:8),SwitchListTile(title:const Text('تفعيل قناة WhatsApp'),value:whatsapp,onChanged:(v)=>setState(()=>whatsapp=v)),SwitchListTile(title:const Text('تفعيل قناة SMS'),value:sms,onChanged:(v)=>setState(()=>sms=v)),const SizedBox(height:12),FilledButton.icon(onPressed:_save,icon:const Icon(Icons.save),label:const Text('حفظ الإعدادات')),const SizedBox(height:10),OutlinedButton.icon(onPressed:_exportBackup,icon:const Icon(Icons.backup_outlined),label:const Text('تصدير نسخة احتياطية')),const SizedBox(height:8),OutlinedButton.icon(onPressed:_importBackup,icon:const Icon(Icons.restore_rounded),label:const Text('استعادة نسخة احتياطية')),const SizedBox(height:20),const Card(child:Padding(padding:EdgeInsets.all(14),child:Text('تفعيل القناة يجهز النظام للتكامل، أما الإرسال الآلي الحقيقي فيحتاج بيانات مزود WhatsApp Business أو SMS Gateway.')))])));
 }
+
+
+class InventoryPage extends StatefulWidget { const InventoryPage({super.key}); @override State<InventoryPage> createState()=>_InventoryPageState(); }
+class _InventoryPageState extends State<InventoryPage> {
+ Future<void> _add() async {
+  final name=TextEditingController(),code=TextEditingController(),unit=TextEditingController(text:'قطعة'),qty=TextEditingController(text:'0'),cost=TextEditingController(text:'0');
+  final ok=await showDialog<bool>(context:context,builder:(ctx)=>Directionality(textDirection:TextDirection.rtl,child:AlertDialog(title:const Text('إضافة صنف للمخزون'),content:SizedBox(width:440,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+   TextField(controller:name,decoration:const InputDecoration(labelText:'اسم الصنف *')),const SizedBox(height:8),TextField(controller:code,decoration:const InputDecoration(labelText:'الباركود / رمز الصنف')),const SizedBox(height:8),TextField(controller:unit,decoration:const InputDecoration(labelText:'وحدة القياس')),const SizedBox(height:8),TextField(controller:qty,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'الكمية')),const SizedBox(height:8),TextField(controller:cost,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'تكلفة الوحدة'))
+  ]))),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('حفظ'))])));
+  if(ok==true&&name.text.trim().isNotEmpty){final list=await LocalStore.inventory();list.add(InventoryItem(id:DateTime.now().microsecondsSinceEpoch.toString(),name:name.text.trim(),code:code.text.trim(),unit:unit.text.trim().isEmpty?'قطعة':unit.text.trim(),quantity:double.tryParse(qty.text)??0,cost:double.tryParse(cost.text)??0));await LocalStore.saveInventory(list);if(mounted)setState((){});}
+  name.dispose();code.dispose();unit.dispose();qty.dispose();cost.dispose();
+ }
+ Future<void> _delete(InventoryItem item)async{final list=await LocalStore.inventory();list.removeWhere((x)=>x.id==item.id);await LocalStore.saveInventory(list);if(mounted)setState((){});}
+ @override Widget build(BuildContext context)=>FutureBuilder<List<InventoryItem>>(future:LocalStore.inventory(),builder:(context,s){final items=s.data??[];final value=items.fold<double>(0,(sum,x)=>sum+x.quantity*x.cost);return ListView(padding:const EdgeInsets.all(16),children:[
+  Row(children:[const Expanded(child:Text('المخزون والأصناف',style:TextStyle(fontSize:23,fontWeight:FontWeight.bold))),IconButton.filled(onPressed:_add,icon:const Icon(Icons.add))]),const SizedBox(height:12),
+  Card(child:ListTile(leading:const Icon(Icons.inventory_2_outlined),title:const Text('قيمة المخزون التقديرية'),trailing:Text(value.toStringAsFixed(2),style:const TextStyle(fontWeight:FontWeight.bold,fontSize:18)))),
+  const SizedBox(height:10),if(items.isEmpty)const Padding(padding:EdgeInsets.all(24),child:Center(child:Text('لا توجد أصناف بعد. اضغط + لإضافة أول صنف.'))),
+  for(final item in items)Card(margin:const EdgeInsets.only(bottom:8),child:ListTile(leading:const CircleAvatar(child:Icon(Icons.inventory_2)),title:Text(item.name,style:const TextStyle(fontWeight:FontWeight.bold)),subtitle:Text('${item.code.isEmpty?'بدون باركود':item.code} • ${item.quantity} ${item.unit} • تكلفة الوحدة ${item.cost.toStringAsFixed(2)}'),trailing:IconButton(onPressed:()=>_delete(item),icon:const Icon(Icons.delete_outline,color:Colors.red))))
+ ]);});
+}
+class StaffPage extends StatefulWidget { const StaffPage({super.key}); @override State<StaffPage> createState()=>_StaffPageState(); }
+class _StaffPageState extends State<StaffPage> {
+ Future<void> _add() async {
+  final name=TextEditingController(),role=TextEditingController(),phone=TextEditingController();
+  final ok=await showDialog<bool>(context:context,builder:(ctx)=>Directionality(textDirection:TextDirection.rtl,child:AlertDialog(title:const Text('إضافة عضو للطاقم'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:name,decoration:const InputDecoration(labelText:'الاسم *')),const SizedBox(height:8),TextField(controller:role,decoration:const InputDecoration(labelText:'التخصص / الوظيفة')),const SizedBox(height:8),TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'رقم الهاتف'))]),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('حفظ'))])));
+  if(ok==true&&name.text.trim().isNotEmpty){final list=await LocalStore.staff();list.add(StaffMember(id:DateTime.now().microsecondsSinceEpoch.toString(),name:name.text.trim(),role:role.text.trim(),phone:phone.text.trim()));await LocalStore.saveStaff(list);if(mounted)setState((){});}
+  name.dispose();role.dispose();phone.dispose();
+ }
+ Future<void> _delete(StaffMember person)async{final list=await LocalStore.staff();list.removeWhere((x)=>x.id==person.id);await LocalStore.saveStaff(list);if(mounted)setState((){});}
+ @override Widget build(BuildContext context)=>FutureBuilder<List<StaffMember>>(future:LocalStore.staff(),builder:(context,s){final list=s.data??[];return ListView(padding:const EdgeInsets.all(16),children:[
+  Row(children:[const Expanded(child:Text('الطاقم الطبي',style:TextStyle(fontSize:23,fontWeight:FontWeight.bold))),IconButton.filled(onPressed:_add,icon:const Icon(Icons.person_add_alt_1))]),
+  const SizedBox(height:12),if(list.isEmpty)const Padding(padding:EdgeInsets.all(24),child:Center(child:Text('لا يوجد أعضاء مسجلون. اضغط + لإضافة الطبيب أو الأخصائي أو الموظف.'))),
+  for(final person in list)Card(margin:const EdgeInsets.only(bottom:8),child:ListTile(leading:const CircleAvatar(child:Icon(Icons.medical_services_outlined)),title:Text(person.name,style:const TextStyle(fontWeight:FontWeight.bold)),subtitle:Text('${person.role.isEmpty?'بدون تخصص محدد':person.role}${person.phone.isEmpty?'':' • '+person.phone}'),trailing:IconButton(onPressed:()=>_delete(person),icon:const Icon(Icons.delete_outline,color:Colors.red))))
+ ]);});
+}
