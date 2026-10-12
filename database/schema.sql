@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS branches (
   phone VARCHAR(30),
   address TEXT,
   next_patient_number INTEGER NOT NULL DEFAULT 1001,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -22,6 +23,20 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS personal_access_tokens (
+  id BIGSERIAL PRIMARY KEY,
+  tokenable_type VARCHAR(255) NOT NULL,
+  tokenable_id UUID NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  token VARCHAR(64) UNIQUE NOT NULL,
+  abilities TEXT,
+  last_used_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_personal_access_tokens_tokenable ON personal_access_tokens(tokenable_type, tokenable_id);
 
 CREATE TABLE IF NOT EXISTS patients (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -53,7 +68,8 @@ CREATE TABLE IF NOT EXISTS appointments (
   appointment_time TIME NOT NULL,
   status VARCHAR(30) NOT NULL DEFAULT 'confirmed',
   notes TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS packages (
@@ -66,7 +82,9 @@ CREATE TABLE IF NOT EXISTS packages (
   remaining_sessions INTEGER NOT NULL DEFAULT 0,
   start_date DATE,
   end_date DATE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK (remaining_sessions <= sessions_count)
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -76,8 +94,11 @@ CREATE TABLE IF NOT EXISTS sessions (
   therapist VARCHAR(200),
   session_date DATE NOT NULL,
   session_time TIME,
+  status VARCHAR(30) NOT NULL DEFAULT 'attended',
   notes TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS invoices (
@@ -86,8 +107,10 @@ CREATE TABLE IF NOT EXISTS invoices (
   invoice_no VARCHAR(50) UNIQUE NOT NULL,
   total NUMERIC(14,2) NOT NULL DEFAULT 0,
   paid NUMERIC(14,2) NOT NULL DEFAULT 0,
-  status VARCHAR(30) NOT NULL DEFAULT 'partial',
-  issued_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  status VARCHAR(30) NOT NULL DEFAULT 'unpaid',
+  issued_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS payments (
@@ -109,12 +132,14 @@ CREATE TABLE IF NOT EXISTS notifications (
   status VARCHAR(30) NOT NULL DEFAULT 'queued',
   scheduled_at TIMESTAMPTZ,
   sent_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS audit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  branch_id UUID REFERENCES branches(id) ON DELETE SET NULL,
   action VARCHAR(100) NOT NULL,
   entity VARCHAR(100),
   entity_id UUID,
@@ -201,7 +226,8 @@ CREATE TABLE IF NOT EXISTS expenses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(), branch_id UUID REFERENCES branches(id) ON DELETE SET NULL,
   category VARCHAR(100) NOT NULL, description TEXT, amount NUMERIC(14,2) NOT NULL,
   payment_method VARCHAR(30) NOT NULL DEFAULT 'cash', expense_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  created_by UUID REFERENCES users(id) ON DELETE SET NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE TABLE IF NOT EXISTS message_templates (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(), branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
