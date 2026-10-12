@@ -652,6 +652,193 @@ class _InvoicesPageState extends State<InvoicesPage>{
     final r=await Navigator.push<Invoice>(context,MaterialPageRoute(builder:(_)=>InvoiceForm(patients:ps)));
     if(r==null)return; final l=await LocalStore.invoices();l.add(r);await LocalStore.saveInvoices(l);setState((){});widget.changed();
   }
+  Future<void> _recordPayment(Invoice invoice) async {
+    if (invoice.remaining <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('هذه الفاتورة مدفوعة بالكامل.')),
+      );
+      return;
+    }
+    final amountController = TextEditingController();
+    final notesController = TextEditingController();
+    String method = 'نقدي';
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            title: Text('تسجيل دفعة للفاتورة ${invoice.number}'),
+            content: SizedBox(
+              width: 420,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text('المبلغ المتبقي: ${invoice.remaining.toStringAsFixed(2)}'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: amountController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(labelText: 'مبلغ الدفعة *'),
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      initialValue: method,
+                      decoration: const InputDecoration(labelText: 'طريقة الدفع'),
+                      items: const [
+                        DropdownMenuItem(value: 'نقدي', child: Text('نقدي')),
+                        DropdownMenuItem(value: 'شبكة / بطاقة', child: Text('شبكة / بطاقة')),
+                        DropdownMenuItem(value: 'تحويل بنكي', child: Text('تحويل بنكي')),
+                        DropdownMenuItem(value: 'محفظة إلكترونية', child: Text('محفظة إلكترونية')),
+                      ],
+                      onChanged: (value) => setDialogState(() => method = value ?? 'نقدي'),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: notesController,
+                      maxLines: 2,
+                      decoration: const InputDecoration(labelText: 'ملاحظات (اختياري)'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('إلغاء'),
+              ),
+              FilledButton.icon(
+                onPressed: () {
+                  final amount = double.tryParse(amountController.text.trim());
+                  if (amount == null || !amount.isFinite || amount <= 0 || amount > invoice.remaining) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(content: Text('أدخل مبلغاً صحيحاً لا يتجاوز المتبقي من الفاتورة.')),
+                    );
+                    return;
+                  }
+                  Navigator.pop(dialogContext, {
+                    'amount': amount,
+                    'method': method,
+                    'notes': notesController.text.trim(),
+                  });
+                },
+                icon: const Icon(Icons.save_outlined),
+                label: const Text('حفظ الدفعة'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    amountController.dispose();
+    notesController.dispose();
+    if (result == null || !mounted) return;
+
+    final amount = (result['amount'] as num).toDouble();
+    final invoices = await LocalStore.invoices();
+    final invoiceIndex = invoices.indexWhere((item) => item.id == invoice.id);
+    if (invoiceIndex < 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر العثور على الفاتورة. حدّث القائمة وحاول مجدداً.')),
+        );
+      }
+      return;
+    }
+    final current = invoices[invoiceIndex];
+    if (amount > current.remaining) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تغير رصيد الفاتورة؛ حدّث القائمة ثم أعد إدخال الدفعة.')),
+        );
+      }
+      return;
+    }
+
+    final newPaid = (current.paid + amount).clamp(0.0, current.total).toDouble();
+    invoices[invoiceIndex] = Invoice(
+      id: current.id,
+      patientId: current.patientId,
+      number: current.number,
+      total: current.total,
+      paid: newPaid,
+      date: current.date,
+      status: newPaid >= current.total ? 'مدفوعة' : (newPaid > 0 ? 'جزئية' : 'غير مدفوعة'),
+    );
+    final payments = await LocalStore.payments();
+    payments.add(PaymentRecord(
+      id: idNow(),
+      invoiceId: current.id,
+      patientId: current.patientId,
+      amount: amount,
+      method: result['method'] as String,
+      date: dateOnly(DateTime.now()),
+      notes: result['notes'] as String,
+    ));
+    await LocalStore.saveInvoices(invoices);
+    await LocalStore.savePayments(payments);
+    if (mounted) {
+      setState(() {});
+      widget.changed();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تم تسجيل الدفعة. المتبقي: ${(current.total - newPaid).toStringAsFixed(2)}')),
+      );
+    }
+  }
+
+  Future<void> _showPaymentHistory(Invoice invoice) async {
+    final allPayments = await LocalStore.payments();
+    final history = allPayments.where((payment) => payment.invoiceId == invoice.id).toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+    if (!mounted) return;
+    final recordedAdditional = history.fold<double>(0, (sum, item) => sum + item.amount);
+    final initialPaid = (invoice.paid - recordedAdditional).clamp(0.0, invoice.total).toDouble();
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: Text('سجل دفعات ${invoice.number}'),
+          content: SizedBox(
+            width: 440,
+            child: history.isEmpty && initialPaid <= 0
+                ? const Text('لا توجد دفعات مسجلة لهذه الفاتورة.')
+                : ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 420),
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        if (initialPaid > 0)
+                          ListTile(
+                            leading: const Icon(Icons.receipt_long_outlined),
+                            title: Text(initialPaid.toStringAsFixed(2)),
+                            subtitle: const Text('المبلغ المدفوع عند إنشاء الفاتورة'),
+                          ),
+                        for (final payment in history)
+                          ListTile(
+                            leading: const Icon(Icons.payments_outlined),
+                            title: Text(payment.amount.toStringAsFixed(2)),
+                            subtitle: Text(
+                              '${payment.date} • ${payment.method}${payment.notes.isEmpty ? '' : ' • ${payment.notes}'}',
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إغلاق')),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override Widget build(BuildContext c)=>FutureBuilder(future:Future.wait([LocalStore.invoices(),LocalStore.patients()]),builder:(c,s){
     if(!s.hasData)return const Center(child:CircularProgressIndicator());
     final inv=s.data![0] as List<Invoice>,ps=s.data![1] as List<Patient>;
@@ -670,13 +857,63 @@ class _InvoicesPageState extends State<InvoicesPage>{
       Padding(padding:const EdgeInsets.fromLTRB(16,10,16,8),child:const Text('سجل الفواتير',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold,color:Color(0xFF12395C)))),
       Padding(padding:const EdgeInsets.symmetric(horizontal:16),child:Column(children:[
         if(inv.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(28),child:Center(child:Text('لا توجد فواتير')))),
-        ...inv.reversed.map((x)=>Card(margin:const EdgeInsets.only(bottom:10),child:ListTile(
-          leading:CircleAvatar(backgroundColor:const Color(0xFFEAF4FF),child:const Icon(Icons.receipt_long,color:Color(0xFF0869B9))),
-          title:Text(x.number,style:const TextStyle(fontWeight:FontWeight.bold)),
-          subtitle:Text(pname(x.patientId)+' • '+x.date+'\nالإجمالي '+x.total.toStringAsFixed(0)+' • المدفوع '+x.paid.toStringAsFixed(0)),
-          isThreeLine:true,
-          trailing:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.end,children:[Text(x.remaining.toStringAsFixed(0),style:TextStyle(fontWeight:FontWeight.bold,color:x.remaining<=0?const Color(0xFF15945A):const Color(0xFFE58B00))),Text(x.remaining<=0?'مدفوعة':'متبقي',style:const TextStyle(fontSize:11,color:Colors.black54))])
-        )))
+        ...inv.reversed.map((x) => Card(
+          margin: const EdgeInsets.only(bottom: 10),
+          child: Column(
+            children: [
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFEAF4FF),
+                  child: Icon(Icons.receipt_long, color: Color(0xFF0869B9)),
+                ),
+                title: Text(x.number, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(
+                  '${pname(x.patientId)} • ${x.date}\nالإجمالي ${x.total.toStringAsFixed(2)} • المدفوع ${x.paid.toStringAsFixed(2)}',
+                ),
+                isThreeLine: true,
+                trailing: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      x.remaining.toStringAsFixed(2),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: x.remaining <= 0 ? const Color(0xFF15945A) : const Color(0xFFE58B00),
+                      ),
+                    ),
+                    Text(
+                      x.remaining <= 0 ? 'مدفوعة' : 'متبقي',
+                      style: const TextStyle(fontSize: 11, color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => _showPaymentHistory(x),
+                      icon: const Icon(Icons.history),
+                      label: const Text('سجل الدفعات'),
+                    ),
+                    if (x.remaining > 0) ...[
+                      const SizedBox(width: 8),
+                      FilledButton.tonalIcon(
+                        onPressed: () => _recordPayment(x),
+                        icon: const Icon(Icons.add_card),
+                        label: const Text('تسجيل دفعة'),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ))
       ]))
     ]);
   });
