@@ -336,10 +336,12 @@ class PatientDetails extends StatelessWidget{
   @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(
     appBar:AppBar(title:Text('ملف المريض • ${patient.fileNo}')),
     body:FutureBuilder<List<Object>>(
-      future:Future.wait<Object>([LocalStore.packages(),LocalStore.invoices()]),
+      future:Future.wait<Object>([LocalStore.packages(),LocalStore.invoices(),LocalStore.sessions()]),
       builder:(context,s){
         final packages=s.data==null?<PackageRecord>[]:s.data![0] as List<PackageRecord>;
         final invoices=s.data==null?<Invoice>[]:s.data![1] as List<Invoice>;
+        final sessionHistory=s.data==null?<SessionRecord>[]:s.data![2] as List<SessionRecord>;
+        final patientSessions=sessionHistory.where((x)=>x.patientId==patient.id).toList()..sort((a,b)=>b.date.compareTo(a.date));
         final patientPackages=packages.where((x)=>x.patientId==patient.id).toList();
         final patientInvoices=invoices.where((x)=>x.patientId==patient.id).toList();
         final outstanding=patientInvoices.fold<double>(0,(sum,x)=>sum+x.remaining);
@@ -379,6 +381,10 @@ class PatientDetails extends StatelessWidget{
           const Text('الفواتير والحركة المالية',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
           if(patientInvoices.isEmpty)const Card(child:ListTile(title:Text('لا توجد فواتير مسجلة'))),
           ...patientInvoices.map((i)=>Card(child:ListTile(leading:const Icon(Icons.receipt_long_outlined),title:Text('فاتورة ${i.number}'),subtitle:Text('التاريخ: ${i.date} • الحالة: ${i.status}'),trailing:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.end,children:[Text('إجمالي ${i.total.toStringAsFixed(2)}'),Text('متبقي ${i.remaining.toStringAsFixed(2)}',style:TextStyle(color:i.remaining>0?Colors.red:Colors.green,fontWeight:FontWeight.bold))])))),
+          const SizedBox(height:12),
+          const Text('سجل الجلسات المنفذة',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
+          if(patientSessions.isEmpty)const Card(child:ListTile(title:Text('لا يوجد سجل جلسات بعد'))),
+          ...patientSessions.map((x)=>Card(child:ListTile(leading:const Icon(Icons.event_available_outlined,color:Color(0xFF16845B)),title:Text(x.packageName),subtitle:Text('التاريخ: ${x.date} • الوقت: ${x.time} • المختص: ${x.therapist.isEmpty?'غير محدد':x.therapist}'),trailing:Text(x.status,style:const TextStyle(color:Color(0xFF16845B),fontWeight:FontWeight.bold)))))
           if(s.connectionState==ConnectionState.waiting)const Center(child:Padding(padding:EdgeInsets.all(12),child:CircularProgressIndicator()))
         ]);
       }
@@ -481,6 +487,10 @@ class _PackagesPageState extends State<PackagesPage>{
     final left=item.remaining-1;
     list[i]=PackageRecord(id:item.id,patientId:item.patientId,name:item.name,price:item.price,paid:item.paid,sessions:item.sessions,remaining:left,startDate:item.startDate,endDate:item.endDate);
     await LocalStore.savePackages(list);
+    final patientForSession=(await LocalStore.patients()).where((p)=>p.id==item.patientId).firstOrNull;
+    final history=await LocalStore.sessions();
+    history.add(SessionRecord(id:idNow(),patientId:item.patientId,packageId:item.id,packageName:item.name,date:dateOnly(DateTime.now()),time:TimeOfDay.now().format(context),therapist:patientForSession?.doctor??'',status:'حضر'));
+    await LocalStore.saveSessions(history);
     final ns=await LocalStore.notifications();
     final patients=await LocalStore.patients();
     final patient=patients.where((p)=>p.id==item.patientId).firstOrNull;
