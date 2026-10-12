@@ -18,6 +18,8 @@ class LocalStore {
   static Future<List<PackageRecord>> packages()=>read('packages',PackageRecord.fromJson);
   static Future<void> savePackages(List<PackageRecord> x)=>write('packages',x,(v)=>v.toJson());
   static Future<List<SessionRecord>> sessions()=>read('sessions',SessionRecord.fromJson);
+  static Future<List<ExaminationRecord>> examinations()=>read('examinations',ExaminationRecord.fromJson);
+  static Future<void> saveExaminations(List<ExaminationRecord> x)=>write('examinations',x,(v)=>v.toJson());
   static Future<void> saveSessions(List<SessionRecord> x)=>write('sessions',x,(v)=>v.toJson());
   static Future<List<Invoice>> invoices()=>read('invoices',Invoice.fromJson);
   static Future<void> saveInvoices(List<Invoice> x)=>write('invoices',x,(v)=>v.toJson());
@@ -50,6 +52,7 @@ class LocalStore {
       'appointments':(await appointments()).map((e)=>e.toJson()).toList(),
       'packages':(await packages()).map((e)=>e.toJson()).toList(),
       'sessions':(await sessions()).map((e)=>e.toJson()).toList(),
+      'examinations':(await examinations()).map((e)=>e.toJson()).toList(),
       'invoices':(await invoices()).map((e)=>e.toJson()).toList(),
       'payments':(await payments()).map((e)=>e.toJson()).toList(),
       'notifications':(await notifications()).map((e)=>e.toJson()).toList(),
@@ -68,6 +71,7 @@ class LocalStore {
     if(x['appointments'] is List) await saveAppointments((x['appointments'] as List).map((e)=>Appointment.fromJson(Map<String,dynamic>.from(e))).toList());
     if(x['packages'] is List) await savePackages((x['packages'] as List).map((e)=>PackageRecord.fromJson(Map<String,dynamic>.from(e))).toList());
     if(x['sessions'] is List) await saveSessions((x['sessions'] as List).map((e)=>SessionRecord.fromJson(Map<String,dynamic>.from(e))).toList());
+    if(x['examinations'] is List) await saveExaminations((x['examinations'] as List).map((e)=>ExaminationRecord.fromJson(Map<String,dynamic>.from(e))).toList());
     if(x['invoices'] is List) await saveInvoices((x['invoices'] as List).map((e)=>Invoice.fromJson(Map<String,dynamic>.from(e))).toList());
     if(x['payments'] is List) await savePayments((x['payments'] as List).map((e)=>PaymentRecord.fromJson(Map<String,dynamic>.from(e))).toList());
     if(x['notifications'] is List) await saveNotifications((x['notifications'] as List).map((e)=>AppNotification.fromJson(Map<String,dynamic>.from(e))).toList());
