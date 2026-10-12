@@ -55,7 +55,7 @@ class _LoginPageState extends State<LoginPage>{
 class Dashboard extends StatefulWidget{const Dashboard({super.key});@override State<Dashboard> createState()=>_DashboardState();}
 class _DashboardState extends State<Dashboard>{
   int index=0,version=0;
-  final names=['الرئيسية','المرضى','المواعيد','الباقات','الفواتير','الإشعارات','التقارير','الإعدادات','المخزون','الطاقم الطبي'];
+  final names=['الرئيسية','المرضى','المواعيد','الباقات','الفواتير','الإشعارات','التقارير','الإعدادات','المخزون','الطاقم الطبي','المالية'];
   void refresh()=>setState(()=>version++);
   void go(int i)=>setState(()=>index=i);
   @override Widget build(BuildContext context){
@@ -69,7 +69,8 @@ class _DashboardState extends State<Dashboard>{
       ReportsPage(key:ValueKey('r'+version.toString())),
       SettingsPage(key:ValueKey('s'+version.toString())),
       InventoryPage(key:ValueKey('v'+version.toString())),
-      StaffPage(key:ValueKey('t'+version.toString()))
+      StaffPage(key:ValueKey('t'+version.toString())),
+      FinancePage(key:ValueKey('f'+version.toString()))
     ];
     return Directionality(textDirection:TextDirection.rtl,child:Scaffold(
       backgroundColor:const Color(0xFFF5F8FC),
@@ -93,6 +94,7 @@ class _DashboardState extends State<Dashboard>{
               Icons.receipt_long_rounded, Icons.notifications_rounded,
               Icons.bar_chart_rounded, Icons.settings_rounded,
               Icons.inventory_2_rounded, Icons.groups_rounded,
+              Icons.account_balance_wallet_rounded,
             ][i]),
             title: Text(names[i], style: const TextStyle(fontWeight: FontWeight.w600)),
             onTap: () { go(i); Navigator.pop(context); },
@@ -155,6 +157,7 @@ class HomePage extends StatelessWidget{
         _QuickTile('الفواتير','إصدار وإدارة الفواتير',Icons.receipt_long_rounded,const Color(0xFF0A9A88),()=>open(4)),
         _QuickTile('المخزون','إدارة الأصناف',Icons.inventory_2_rounded,const Color(0xFFF08A00),()=>open(8)),
         _QuickTile('الطاقم الطبي','إدارة الموظفين',Icons.groups_rounded,const Color(0xFF149B92),()=>open(9)),
+        _QuickTile('المالية','المصروفات والحضور والرواتب',Icons.account_balance_wallet_rounded,const Color(0xFF0869B9),()=>open(10)),
         _QuickTile('التقارير','إحصائيات وتقارير',Icons.bar_chart_rounded,const Color(0xFF7040D8),()=>open(6)),
         _QuickTile('الإعدادات','إعدادات المركز',Icons.settings_rounded,const Color(0xFF1677D2),()=>open(7))
       ]),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,crossAxisSpacing:10,mainAxisSpacing:10,childAspectRatio:1.25))),
