@@ -5,6 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'models.dart';
 import 'storage.dart';
 import 'pro_pages.dart';
+import 'patient_documents.dart';
+import 'examination_page.dart';
 
 void main()=>runApp(const WaseemMedicalPro());
 
@@ -285,7 +287,9 @@ class _PatientsPageState extends State<PatientsPage>{
           Row(children:[
             Expanded(child:TextField(onChanged:(x)=>setState(()=>q=x),decoration:InputDecoration(hintText:'ابحث باسم المريض أو رقم الملف',prefixIcon:const Icon(Icons.search),filled:true,fillColor:Colors.white,border:OutlineInputBorder(borderRadius:BorderRadius.circular(14),borderSide:BorderSide.none)))),
             const SizedBox(width:10),
-            IconButton(onPressed:add,style:IconButton.styleFrom(backgroundColor:Colors.white,foregroundColor:const Color(0xFF0869B9),padding:const EdgeInsets.all(14)),icon:const Icon(Icons.person_add_alt_1_rounded))
+            IconButton(tooltip:'كشف المرضى والطباعة',onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const PatientReportsPage())),style:IconButton.styleFrom(backgroundColor:Colors.white,foregroundColor:const Color(0xFF0869B9),padding:const EdgeInsets.all(14)),icon:const Icon(Icons.print_outlined)),
+             const SizedBox(width:4),
+             IconButton(onPressed:add,style:IconButton.styleFrom(backgroundColor:Colors.white,foregroundColor:const Color(0xFF0869B9),padding:const EdgeInsets.all(14)),icon:const Icon(Icons.person_add_alt_1_rounded))
           ])
         ])
       )),
@@ -337,7 +341,11 @@ class PatientDetails extends StatelessWidget{
   final Patient patient;
   const PatientDetails({super.key,required this.patient});
   @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(
-    appBar:AppBar(title:Text('ملف المريض • ${patient.fileNo}')),
+    appBar:AppBar(title:Text('ملف المريض • ${patient.fileNo}'),actions:[
+       IconButton(tooltip:'ورقة معاينة جديدة',icon:const Icon(Icons.medical_information_outlined),onPressed:()async{final saved=await Navigator.push<bool>(c,MaterialPageRoute(builder:(_)=>ExaminationPage(patient:patient)));if(saved==true&&c.mounted)(c as Element).markNeedsBuild();}),
+       IconButton(tooltip:'مشاركة كشف المريض',icon:const Icon(Icons.share_outlined),onPressed:()=>sharePatientReport(patient)),
+       IconButton(tooltip:'طباعة كشف المريض',icon:const Icon(Icons.print_outlined),onPressed:()=>printPatientReport(patient)),
+     ]),
     body:FutureBuilder<List<Object>>(
       future:Future.wait<Object>([LocalStore.packages(),LocalStore.invoices(),LocalStore.sessions(),LocalStore.payments()]),
       builder:(context,s){
@@ -576,7 +584,8 @@ class _PackagesPageState extends State<PackagesPage>{
   Future<void> add()async{
     final ps=await LocalStore.patients();
     if(ps.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أضف مريضاً أولاً')));return;}
-    final r=await Navigator.push<PackageRecord>(context,MaterialPageRoute(builder:(_)=>PackageForm(patients:ps)));
+    final staff=await LocalStore.staff();
+    final r=await Navigator.push<PackageRecord>(context,MaterialPageRoute(builder:(_)=>PackageForm(patients:ps,staff:staff)));
     if(r==null)return;
     final l=await LocalStore.packages(); l.add(r); await LocalStore.savePackages(l);
     final patient=ps.where((p)=>p.id==r.patientId).firstOrNull;
@@ -604,12 +613,12 @@ class _PackagesPageState extends State<PackagesPage>{
         return;
       }
       final left=current.remaining-1;
-      list[index]=PackageRecord(id:current.id,patientId:current.patientId,name:current.name,price:current.price,paid:current.paid,sessions:current.sessions,remaining:left,startDate:current.startDate,endDate:current.endDate);
+      list[index]=PackageRecord(id:current.id,patientId:current.patientId,name:current.name,price:current.price,paid:current.paid,sessions:current.sessions,remaining:left,startDate:current.startDate,endDate:current.endDate,therapist:current.therapist);
       await LocalStore.savePackages(list);
       final patients=await LocalStore.patients();
       final patient=patients.where((p)=>p.id==current.patientId).firstOrNull;
       final history=await LocalStore.sessions();
-      history.add(SessionRecord(id:idNow(),patientId:current.patientId,packageId:current.id,packageName:current.name,date:dateOnly(DateTime.now()),time:sessionTime,therapist:patient?.doctor??'',status:'حضر'));
+      history.add(SessionRecord(id:idNow(),patientId:current.patientId,packageId:current.id,packageName:current.name,date:dateOnly(DateTime.now()),time:sessionTime,therapist:current.therapist.isNotEmpty?current.therapist:(patient?.doctor??''),status:'حضر'));
       await LocalStore.saveSessions(history);
       final notifications=await LocalStore.notifications();
       if(patient!=null){
@@ -642,7 +651,7 @@ class _PackagesPageState extends State<PackagesPage>{
       Padding(padding:const EdgeInsets.symmetric(horizontal:16),child:Column(children:[
         if(g.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(28),child:Center(child:Text('لا توجد باقات مسجلة')))),
         ...g.map((x)=>Card(margin:const EdgeInsets.only(bottom:10),child:Padding(padding:const EdgeInsets.all(14),child:Column(children:[
-          Row(children:[Container(width:46,height:46,decoration:BoxDecoration(color:const Color(0xFFEAF4FF),borderRadius:BorderRadius.circular(13)),child:const Icon(Icons.layers_rounded,color:Color(0xFF0869B9))),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(x.name,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16)),const SizedBox(height:3),Text(pname(x.patientId),style:const TextStyle(color:Colors.black54,fontSize:12))])),Text(x.remaining.toString(),style:const TextStyle(fontSize:24,fontWeight:FontWeight.bold,color:Color(0xFF0869B9)))]),
+          Row(children:[Container(width:46,height:46,decoration:BoxDecoration(color:const Color(0xFFEAF4FF),borderRadius:BorderRadius.circular(13)),child:const Icon(Icons.layers_rounded,color:Color(0xFF0869B9))),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(x.name,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16)),const SizedBox(height:3),Text(pname(x.patientId)+'${x.therapist.isEmpty?'':' • المسؤول: '+x.therapist}',style:const TextStyle(color:Colors.black54,fontSize:12))])),Text(x.remaining.toString(),style:const TextStyle(fontSize:24,fontWeight:FontWeight.bold,color:Color(0xFF0869B9)))]),
           const SizedBox(height:12),
           ClipRRect(borderRadius:BorderRadius.circular(8),child:LinearProgressIndicator(value:x.sessions<=0?0:x.remaining/x.sessions,minHeight:8,backgroundColor:const Color(0xFFE8EEF5))),
           const SizedBox(height:8),
@@ -654,20 +663,24 @@ class _PackagesPageState extends State<PackagesPage>{
 }
 class PackageForm extends StatefulWidget{
   final List<Patient> patients;
-  const PackageForm({super.key,required this.patients});
+  final List<StaffMember> staff;
+  const PackageForm({super.key,required this.patients,required this.staff});
   @override State<PackageForm> createState()=>_PackageFormState();
 }
 class _PackageFormState extends State<PackageForm>{
   late String pid;
+  String therapist='';
   final name=TextEditingController(),price=TextEditingController(),paid=TextEditingController(),sessions=TextEditingController();
   @override void initState(){super.initState();pid=widget.patients.first.id;}
   @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:const Text('باقة جديدة')),body:ListView(padding:const EdgeInsets.all(16),children:[
-    DropdownButtonFormField(value:pid,decoration:const InputDecoration(labelText:'المريض'),items:widget.patients.map((p)=>DropdownMenuItem(value:p.id,child:Text(p.name))).toList(),onChanged:(v)=>setState(()=>pid=v!)),
+    DropdownButtonFormField<String>(initialValue:pid,decoration:const InputDecoration(labelText:'المريض'),items:widget.patients.map((p)=>DropdownMenuItem(value:p.id,child:Text(p.name))).toList(),onChanged:(v)=>setState(()=>pid=v??pid)),
+    const SizedBox(height:10),
+    DropdownButtonFormField<String>(initialValue:therapist,decoration:const InputDecoration(labelText:'الممرض / الأخصائي المسؤول عن الباقة'),items:[const DropdownMenuItem(value:'',child:Text('بدون إسناد')), ...widget.staff.map((x)=>DropdownMenuItem(value:x.name,child:Text(x.name+' • '+x.role)))],onChanged:(v)=>setState(()=>therapist=v??'')),
     const SizedBox(height:10),TextField(controller:name,decoration:const InputDecoration(labelText:'اسم الباقة')),
     const SizedBox(height:10),TextField(controller:price,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'السعر')),
     const SizedBox(height:10),TextField(controller:paid,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'المدفوع')),
     const SizedBox(height:10),TextField(controller:sessions,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'عدد الجلسات')),
-    const SizedBox(height:20),SizedBox(height:50,child:FilledButton.icon(onPressed:(){final s=int.tryParse(sessions.text)??0;if(name.text.trim().isEmpty||s<=0){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل اسم الباقة وعدد جلسات صحيح')));return;}final p=double.tryParse(price.text)??0,paidValue=double.tryParse(paid.text)??0;if(p<0||paidValue<0||paidValue>p){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تحقق من السعر والمدفوع')));return;}Navigator.pop(c,PackageRecord(id:idNow(),patientId:pid,name:name.text.trim(),price:p,paid:paidValue,sessions:s,remaining:s,startDate:dateOnly(DateTime.now()),endDate:dateOnly(DateTime.now().add(const Duration(days:30)))));},icon:const Icon(Icons.save),label:const Text('حفظ الباقة')))
+    const SizedBox(height:20),SizedBox(height:50,child:FilledButton.icon(onPressed:(){final s=int.tryParse(sessions.text)??0;if(name.text.trim().isEmpty||s<=0){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل اسم الباقة وعدد جلسات صحيح')));return;}final p=double.tryParse(price.text)??0,paidValue=double.tryParse(paid.text)??0;if(p<0||paidValue<0||paidValue>p){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تحقق من السعر والمدفوع')));return;}Navigator.pop(c,PackageRecord(id:idNow(),patientId:pid,name:name.text.trim(),price:p,paid:paidValue,sessions:s,remaining:s,startDate:dateOnly(DateTime.now()),endDate:dateOnly(DateTime.now().add(const Duration(days:30))),therapist:therapist));},icon:const Icon(Icons.save),label:const Text('حفظ الباقة')))
   ])));
 }
 class InvoicesPage extends StatefulWidget{
@@ -974,13 +987,11 @@ class NotificationsPage extends StatefulWidget{
   @override State<NotificationsPage> createState()=>_NotificationsPageState();
 }
 class _NotificationsPageState extends State<NotificationsPage>{
-  Future<void> clear()async{await LocalStore.saveNotifications([]);setState((){});}
+  String filter='الكل', statusFilter='الكل', query='';
+  Future<void> clear()async{await LocalStore.saveNotifications([]);if(mounted)setState((){});}
   Future<void> _send(AppNotification item) async {
     final phone=item.recipientPhone.trim();
-    if(phone.isEmpty){
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('لا يوجد رقم هاتف محفوظ لهذا الإشعار.')));
-      return;
-    }
+    if(phone.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('لا يوجد رقم هاتف محفوظ لهذا الإشعار.')));return;}
     Uri target;
     if(item.channel=='WhatsApp'){
       var digits=phone.replaceAll(RegExp(r'[^0-9]'),'').replaceFirst(RegExp(r'^00'),'');
@@ -988,53 +999,67 @@ class _NotificationsPageState extends State<NotificationsPage>{
       if(digits.length==9&&digits.startsWith('7'))digits='967'+digits;
       if(digits.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('رقم الهاتف غير صالح لفتح WhatsApp.')));return;}
       target=Uri.parse('https://wa.me/$digits?text=${Uri.encodeComponent(item.body)}');
-    } else if(item.channel=='SMS'){
-      target=Uri(scheme:'sms',path:phone,queryParameters:{'body':item.body});
-    } else {
+    }else if(item.channel=='SMS'){target=Uri(scheme:'sms',path:phone,queryParameters:{'body':item.body});}
+    else{
       final choice=await showModalBottomSheet<String>(context:context,builder:(ctx)=>SafeArea(child:Wrap(children:[
         ListTile(leading:const Icon(Icons.chat,color:Colors.green),title:const Text('الإرسال عبر WhatsApp'),onTap:()=>Navigator.pop(ctx,'WhatsApp')),
         ListTile(leading:const Icon(Icons.sms_outlined,color:Colors.blue),title:const Text('الإرسال عبر SMS'),onTap:()=>Navigator.pop(ctx,'SMS')),
       ])));
       if(choice==null)return;
-      await _send(AppNotification(id:item.id,title:item.title,body:item.body,channel:choice,status:item.status,date:item.date,recipientPhone:item.recipientPhone));
-      return;
+      await _send(AppNotification(id:item.id,title:item.title,body:item.body,channel:choice,status:item.status,date:item.date,recipientPhone:item.recipientPhone));return;
     }
-    try {
+    try{
       final opened=await launchUrl(target,mode:LaunchMode.externalApplication);
       if(opened){
-        final current=await LocalStore.notifications();
-        final index=current.indexWhere((n)=>n.id==item.id);
-        if(index>=0){
-          final old=current[index];
-          current[index]=AppNotification(id:old.id,title:old.title,body:old.body,channel:old.channel,status:'تم فتح التطبيق - بانتظار تأكيد الإرسال',date:old.date,recipientPhone:old.recipientPhone);
-          await LocalStore.saveNotifications(current);
-        }
-        if(mounted){
-          setState((){});
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم فتح تطبيق الإرسال. أكمل إرسال الرسالة من التطبيق؛ لم يتم تأكيد التسليم تلقائياً.')));
-        }
-      } else if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تعذر فتح تطبيق الإرسال. تحقق من تثبيت WhatsApp أو تطبيق الرسائل.')));
-    } catch(e) {
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر فتح تطبيق الإرسال: $e')));
-    }
+        final current=await LocalStore.notifications();final i=current.indexWhere((n)=>n.id==item.id);
+        if(i>=0){final old=current[i];current[i]=AppNotification(id:old.id,title:old.title,body:old.body,channel:old.channel,status:'تم فتح التطبيق - بانتظار تأكيد الإرسال',date:old.date,recipientPhone:old.recipientPhone);await LocalStore.saveNotifications(current);}
+        if(mounted){setState((){});ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم فتح تطبيق الإرسال؛ أكمل الإرسال يدوياً.')));}
+      }else if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تعذر فتح تطبيق الإرسال.')));
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر فتح تطبيق الإرسال: $e')));}
   }
   @override Widget build(BuildContext c)=>FutureBuilder<List<AppNotification>>(future:LocalStore.notifications(),builder:(c,s){
-    final n=s.data??[];
+    final all=s.data??[];
+    all.sort((a,b){final d=b.date.compareTo(a.date);return d!=0?d:b.id.compareTo(a.id);});
+    final n=all.where((x)=>(filter=='الكل'||x.channel==filter||(filter=='النظام'&&x.channel!='WhatsApp'&&x.channel!='SMS'))&&(statusFilter=='الكل'||(statusFilter=='بانتظار الإرسال'&&(x.status.contains('جاهز')||x.status.contains('انتظار')))||(statusFilter=='تم فتح الإرسال'&&x.status.contains('فتح')))&&(query.isEmpty||x.title.contains(query)||x.body.contains(query)||x.recipientPhone.contains(query))).toList();
+    final pending=all.where((x)=>x.status.contains('جاهز')||x.status.contains('انتظار')).length;
     return ListView(padding:EdgeInsets.zero,children:[
-      Container(padding:const EdgeInsets.fromLTRB(16,18,16,20),decoration:const BoxDecoration(color:Color(0xFF0869B9),borderRadius:BorderRadius.only(bottomLeft:Radius.circular(26),bottomRight:Radius.circular(26))),child:Row(children:[
-        const Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('مركز الإشعارات',style:TextStyle(color:Colors.white,fontSize:25,fontWeight:FontWeight.bold)),SizedBox(height:4),Text('متابعة تنبيهات النظام والمرضى والجلسات',style:TextStyle(color:Colors.white70))])),
-        if(n.isNotEmpty)IconButton(onPressed:clear,style:IconButton.styleFrom(backgroundColor:Colors.white,foregroundColor:Color(0xFF0869B9)),icon:const Icon(Icons.delete_sweep_outlined))
+      Container(padding:const EdgeInsets.fromLTRB(16,18,16,20),decoration:const BoxDecoration(color:Color(0xFF0869B9),borderRadius:BorderRadius.only(bottomLeft:Radius.circular(26),bottomRight:Radius.circular(26))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Row(children:[const Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('مركز الإشعارات',style:TextStyle(color:Colors.white,fontSize:25,fontWeight:FontWeight.bold)),SizedBox(height:4),Text('مرتبة بالأحدث مع تصنيف وحالة واضحة',style:TextStyle(color:Colors.white70))])),if(all.isNotEmpty)IconButton(tooltip:'حذف جميع الإشعارات',onPressed:clear,style:IconButton.styleFrom(backgroundColor:Colors.white,foregroundColor:Color(0xFF0869B9)),icon:const Icon(Icons.delete_sweep_outlined))]),
+        const SizedBox(height:12),
+        Wrap(spacing:8,runSpacing:8,children:[
+          _notificationBadge('الإجمالي',all.length,Icons.notifications_none),
+          _notificationBadge('بانتظار الإرسال',pending,Icons.schedule),
+          _notificationBadge('رسائل WhatsApp',all.where((x)=>x.channel=='WhatsApp').length,Icons.chat),
+          _notificationBadge('رسائل SMS',all.where((x)=>x.channel=='SMS').length,Icons.sms_outlined),
+        ])
       ])),
-      Padding(padding:const EdgeInsets.fromLTRB(16,18,16,8),child:Text(n.length.toString()+' إشعار',style:const TextStyle(fontSize:20,fontWeight:FontWeight.bold,color:Color(0xFF12395C)))),
-      Padding(padding:const EdgeInsets.symmetric(horizontal:16),child:Column(children:[
-        if(n.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(32),child:Center(child:Text('لا توجد إشعارات حالياً')))),
-        ...n.map((x)=>Card(margin:const EdgeInsets.only(bottom:10),child:ListTile(
-          leading:CircleAvatar(backgroundColor:x.channel=='WhatsApp'?const Color(0xFFEAFBF1):const Color(0xFFEAF4FF),child:Icon(x.channel=='WhatsApp'?Icons.chat_bubble_outline:Icons.notifications_none_rounded,color:x.channel=='WhatsApp'?const Color(0xFF15945A):const Color(0xFF0869B9))),
+      Padding(padding:const EdgeInsets.all(16),child:Column(children:[
+        TextField(onChanged:(v)=>setState(()=>query=v),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),labelText:'بحث في العنوان أو النص أو رقم الهاتف')),
+        const SizedBox(height:10),
+        DropdownButtonFormField<String>(value:filter,decoration:const InputDecoration(labelText:'تصنيف الإشعارات'),items:const['الكل','النظام','WhatsApp','SMS'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setState(()=>filter=v??'الكل')),
+        const SizedBox(height:10),
+        DropdownButtonFormField<String>(value:statusFilter,decoration:const InputDecoration(labelText:'حالة الإرسال'),items:const['الكل','بانتظار الإرسال','تم فتح الإرسال'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setState(()=>statusFilter=v??'الكل')),
+        const SizedBox(height:12),
+        Align(alignment:AlignmentDirectional.centerStart,child:Text('${n.length} إشعار • مرتبة من الأحدث إلى الأقدم',style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16))),
+        const SizedBox(height:8),
+        if(n.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(28),child:Center(child:Text('لا توجد إشعارات مطابقة للتصفية')))),
+        for(final x in n)Card(margin:const EdgeInsets.only(bottom:9),child:ExpansionTile(
+          leading:CircleAvatar(backgroundColor:x.channel=='WhatsApp'?const Color(0xFFEAFBF1):x.channel=='SMS'?const Color(0xFFEAF4FF):const Color(0xFFFFF3DF),child:Icon(x.channel=='WhatsApp'?Icons.chat_bubble_outline:x.channel=='SMS'?Icons.sms_outlined:Icons.notifications_none,color:x.channel=='WhatsApp'?const Color(0xFF15945A):const Color(0xFF0869B9))),
           title:Text(x.title,style:const TextStyle(fontWeight:FontWeight.bold)),
-          subtitle:Text(x.body+'\n'+x.date, maxLines:3,overflow:TextOverflow.ellipsis),
-          trailing:Row(mainAxisSize:MainAxisSize.min,children:[IconButton(tooltip:'فتح الإرسال مباشرة',onPressed:()=>_send(x),icon:Icon(x.channel=='SMS'?Icons.sms_outlined:Icons.send_rounded,color:Theme.of(c).colorScheme.primary,size:20)),IconButton(tooltip:'نسخ نص الرسالة',onPressed:()async{await Clipboard.setData(ClipboardData(text:x.body));if(c.mounted)ScaffoldMessenger.of(c).showSnackBar(const SnackBar(content:Text('تم نسخ نص الرسالة.')));},icon:const Icon(Icons.copy_outlined,size:19))])
-        )))
+          subtitle:Text('${x.date} • ${x.channel} • ${x.status}',maxLines:2,overflow:TextOverflow.ellipsis),
+          children:[Padding(padding:const EdgeInsets.fromLTRB(14,0,14,14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            SelectableText(x.body),
+            if(x.recipientPhone.isNotEmpty)Padding(padding:const EdgeInsets.only(top:8),child:Text('المستلم: ${x.recipientPhone}',style:const TextStyle(color:Colors.black54))),
+            const SizedBox(height:10),
+            Wrap(spacing:8,children:[
+              FilledButton.tonalIcon(onPressed:()=>_send(x),icon:const Icon(Icons.send),label:const Text('فتح الإرسال')),
+              OutlinedButton.icon(onPressed:()async{await Clipboard.setData(ClipboardData(text:x.body));if(c.mounted)ScaffoldMessenger.of(c).showSnackBar(const SnackBar(content:Text('تم نسخ نص الرسالة.')));},icon:const Icon(Icons.copy),label:const Text('نسخ النص')),
+              IconButton(tooltip:'حذف الإشعار',onPressed:()async{final list=await LocalStore.notifications();list.removeWhere((z)=>z.id==x.id);await LocalStore.saveNotifications(list);if(mounted)setState((){});},icon:const Icon(Icons.delete_outline,color:Colors.red)),
+            ])
+          ]))]
+        )),
       ]))
     ]);
   });
+  Widget _notificationBadge(String label,int count,IconData icon)=>Container(padding:const EdgeInsets.symmetric(horizontal:10,vertical:8),decoration:BoxDecoration(color:Colors.white.withOpacity(.13),borderRadius:BorderRadius.circular(12)),child:Row(mainAxisSize:MainAxisSize.min,children:[Icon(icon,color:Colors.white,size:16),const SizedBox(width:5),Text('$label: $count',style:const TextStyle(color:Colors.white,fontSize:12,fontWeight:FontWeight.w600))]));
 }
