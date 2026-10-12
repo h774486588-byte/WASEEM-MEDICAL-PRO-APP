@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS branches (
   name VARCHAR(150) NOT NULL,
   phone VARCHAR(30),
   address TEXT,
+  next_patient_number INTEGER NOT NULL DEFAULT 1001,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -17,13 +18,15 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   role VARCHAR(30) NOT NULL DEFAULT 'reception',
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  last_login_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS patients (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   branch_id UUID REFERENCES branches(id) ON DELETE SET NULL,
-  file_no VARCHAR(30) UNIQUE NOT NULL,
+  file_no VARCHAR(30) NOT NULL,
   name VARCHAR(200) NOT NULL,
   phone VARCHAR(40) NOT NULL,
   national_id VARCHAR(80),
@@ -35,7 +38,11 @@ CREATE TABLE IF NOT EXISTS patients (
   alternate_phone VARCHAR(40),
   address TEXT,
   notes TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ,
+  UNIQUE(branch_id, file_no)
 );
 
 CREATE TABLE IF NOT EXISTS appointments (
