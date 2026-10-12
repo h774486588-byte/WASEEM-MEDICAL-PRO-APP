@@ -21,7 +21,7 @@ class PatientController extends Controller
             ->when($request->filled('q'), function (Builder $query) use ($request): void {
                 $term = trim((string) $request->query('q'));
                 $query->where(function (Builder $search) use ($term): void {
-                    $search->where('name', 'ilike', '%'.$term.'%')
+                    $search->where('name', 'like', '%'.$term.'%')
                         ->orWhere('phone', 'like', '%'.$term.'%')
                         ->orWhere('file_no', 'like', '%'.$term.'%');
                 });
