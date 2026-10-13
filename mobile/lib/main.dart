@@ -664,8 +664,22 @@ class _PackagesPageState extends State<PackagesPage>{
       final patients=await LocalStore.patients();
       final patient=patients.where((p)=>p.id==current.patientId).firstOrNull;
       final history=await LocalStore.sessions();
-      history.add(SessionRecord(id:idNow(),patientId:current.patientId,packageId:current.id,packageName:current.name,date:dateOnly(DateTime.now()),time:sessionTime,therapist:current.therapist.isNotEmpty?current.therapist:(patient?.nurse.isNotEmpty==true?patient!.nurse:(patient?.doctor??'')),status:'حضر'));
+      final session=SessionRecord(id:idNow(),patientId:current.patientId,packageId:current.id,packageName:current.name,date:dateOnly(DateTime.now()),time:sessionTime,therapist:current.therapist.isNotEmpty?current.therapist:(patient?.nurse.isNotEmpty==true?patient!.nurse:(patient?.doctor??'')),status:'حضر');
+      history.add(session);
       await LocalStore.saveSessions(history);
+      // Create one session earning entry only when the assigned therapist matches a staff record.
+      // A fixed session fee takes precedence; otherwise calculate commission from the package's per-session value.
+      final staffList=await LocalStore.staff();
+      final therapist=staffList.where((x)=>x.name.trim()==session.therapist.trim()&&session.therapist.trim().isNotEmpty).firstOrNull;
+      if(therapist!=null){
+        final earned=therapist.sessionFee>0?therapist.sessionFee:(therapist.commissionPercent>0&&current.sessions>0?(current.price/current.sessions)*(therapist.commissionPercent/100):0.0);
+        final payroll=await LocalStore.payrollEntries();
+        final earningId='session-earned-${session.id}';
+        if(earned>0&&!payroll.any((x)=>x.id==earningId)){
+          payroll.add(PayrollEntry(id:earningId,staffId:therapist.id,staffName:therapist.name,type:'استحقاق جلسة',month:DateTime.now().year.toString().padLeft(4,'0')+'-'+DateTime.now().month.toString().padLeft(2,'0'),date:dateOnly(DateTime.now()),method:'استحقاق',amount:earned,notes:'استحقاق جلسة ${current.name} للمريض ${patient?.name??''} • ${session.id}'));
+          await LocalStore.savePayrollEntries(payroll);
+        }
+      }
       final notifications=await LocalStore.notifications();
       if(patient!=null){
         final message='مرحباً '+patient.name+'، تم تسجيل حضور جلستك العلاجية وخصم جلسة واحدة من باقة '+current.name+'. الجلسات المتبقية: '+left.toString()+' من '+current.sessions.toString()+'.';
