@@ -78,10 +78,10 @@ class InventoryItem {
 }
 class StaffMember {
  final String id,name,role,phone;
- final double monthlySalary;
- const StaffMember({required this.id,required this.name,required this.role,required this.phone,this.monthlySalary=0});
- Map<String,dynamic> toJson()=>{'id':id,'name':name,'role':role,'phone':phone,'monthlySalary':monthlySalary};
- factory StaffMember.fromJson(Map<String,dynamic> j)=>StaffMember(id:j['id']?.toString()??'',name:j['name']?.toString()??'',role:j['role']?.toString()??'',phone:j['phone']?.toString()??'',monthlySalary:(j['monthlySalary'] as num?)?.toDouble()??0);
+ final double monthlySalary,commissionPercent,sessionFee;
+ const StaffMember({required this.id,required this.name,required this.role,required this.phone,this.monthlySalary=0,this.commissionPercent=0,this.sessionFee=0});
+ Map<String,dynamic> toJson()=>{'id':id,'name':name,'role':role,'phone':phone,'monthlySalary':monthlySalary,'commissionPercent':commissionPercent,'sessionFee':sessionFee};
+ factory StaffMember.fromJson(Map<String,dynamic> j)=>StaffMember(id:j['id']?.toString()??'',name:j['name']?.toString()??'',role:j['role']?.toString()??'',phone:j['phone']?.toString()??'',monthlySalary:(j['monthlySalary'] as num?)?.toDouble()??0,commissionPercent:(j['commissionPercent'] as num?)?.toDouble()??0,sessionFee:(j['sessionFee'] as num?)?.toDouble()??0);
 }
 
 class ExpenseRecord {
