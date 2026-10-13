@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -740,7 +741,7 @@ class _PackageFormState extends State<PackageForm>{
     const SizedBox(height:10),TextField(controller:name,decoration:const InputDecoration(labelText:'اسم الباقة')),
     const SizedBox(height:10),TextField(controller:price,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'السعر')),
     const SizedBox(height:10),TextField(controller:paid,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'المدفوع')),
-    const SizedBox(height:10),TextField(controller:sessions,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'عدد الجلسات'))
+    const SizedBox(height:10),TextField(controller:sessions,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'عدد الجلسات')),
     const SizedBox(height:20),SizedBox(height:50,child:FilledButton.icon(onPressed:(){final s=int.tryParse(sessions.text)??0;if(name.text.trim().isEmpty||s<=0){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل اسم الباقة وعدد جلسات صحيح')));return;}final p=double.tryParse(price.text)??0,paidValue=double.tryParse(paid.text)??0;if(p<0||paidValue<0||paidValue>p){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تحقق من السعر والمدفوع')));return;}Navigator.pop(c,PackageRecord(id:idNow(),patientId:pid,name:name.text.trim(),price:p,paid:paidValue,sessions:s,remaining:s,startDate:dateOnly(DateTime.now()),endDate:dateOnly(DateTime.now().add(const Duration(days:30))),therapist:therapist));},icon:const Icon(Icons.save),label:const Text('حفظ الباقة')))
   ])));
 }
