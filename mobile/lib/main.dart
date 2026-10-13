@@ -6,6 +6,7 @@ import 'models.dart';
 import 'storage.dart';
 import 'pro_pages.dart';
 import 'patient_documents.dart';
+import 'patient_operations_statement.dart';
 import 'examination_page.dart';
 
 void main()=>runApp(const WaseemMedicalPro());
@@ -344,6 +345,7 @@ class PatientDetails extends StatelessWidget{
   const PatientDetails({super.key,required this.patient});
   @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(
     appBar:AppBar(title:Text('ملف المريض • ${patient.fileNo}'),actions:[
+       IconButton(tooltip:'كشف جميع العمليات',icon:const Icon(Icons.history_rounded),onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>PatientOperationsStatementPage(patient:patient)))),
        IconButton(tooltip:'ورقة معاينة جديدة',icon:const Icon(Icons.medical_information_outlined),onPressed:()async{final saved=await Navigator.push<bool>(c,MaterialPageRoute(builder:(_)=>ExaminationPage(patient:patient)));if(saved==true&&c.mounted)(c as Element).markNeedsBuild();}),
        IconButton(tooltip:'مشاركة كشف المريض',icon:const Icon(Icons.share_outlined),onPressed:()=>sharePatientReport(patient)),
        IconButton(tooltip:'طباعة كشف المريض',icon:const Icon(Icons.print_outlined),onPressed:()=>printPatientReport(patient)),
