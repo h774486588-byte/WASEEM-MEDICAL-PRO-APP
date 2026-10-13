@@ -469,7 +469,7 @@ class _FinancePageState extends State<FinancePage> {
     constraints:const BoxConstraints(maxHeight:420),
     child:ListView(shrinkWrap:true,children:[
      for(final item in history)ListTile(
-      leading:Icon(item.type=='خصم'?Icons.remove_circle_outline:Icons.payments_outlined,color:item.type=='خصم'?Colors.red:Colors.green),
+      leading:Icon(item.type=='خصم'?Icons.remove_circle_outline:(item.type=='استحقاق جلسة'?Icons.medical_services_outlined:Icons.payments_outlined),color:item.type=='خصم'?Colors.red:(item.type=='استحقاق جلسة'?const Color(0xFF0869B9):Colors.green)),
       title:Text('${item.type}: ${item.amount.toStringAsFixed(2)}'),
       subtitle:Text('${item.month} • ${item.date} • ${item.method}${item.notes.isEmpty?'':'\n'+item.notes}'),
      ),
@@ -489,6 +489,7 @@ class _FinancePageState extends State<FinancePage> {
   final monthPayroll=payroll.where((x)=>x.month==month).toList();
   final monthPaid=monthPayroll.where((x)=>x.type=='صرف راتب').fold<double>(0,(sum,x)=>sum+x.amount);
   final monthDeductions=monthPayroll.where((x)=>x.type=='خصم').fold<double>(0,(sum,x)=>sum+x.amount);
+  final monthSessionEarnings=monthPayroll.where((x)=>x.type=='استحقاق جلسة').fold<double>(0,(sum,x)=>sum+x.amount);
   return DefaultTabController(length:3,child:Column(children:[
    const Material(color:Color(0xFF0869B9),child:TabBar(isScrollable:true,labelColor:Colors.white,unselectedLabelColor:Colors.white70,indicatorColor:Colors.white,tabs:[
     Tab(icon:Icon(Icons.money_off_csred_outlined),text:'المصروفات'),
@@ -536,7 +537,7 @@ class _FinancePageState extends State<FinancePage> {
     ]),
     ListView(padding:const EdgeInsets.all(16),children:[
      Row(children:[const Expanded(child:Text('الرواتب والخصومات',style:TextStyle(fontSize:22,fontWeight:FontWeight.bold))),Text(month,style:const TextStyle(color:Colors.black54))]),
-     Card(child:ListTile(leading:const Icon(Icons.payments_outlined),title:const Text('ملخص الحركات لهذا الشهر'),subtitle:Text('صرف: ${monthPaid.toStringAsFixed(2)} • خصومات: ${monthDeductions.toStringAsFixed(2)}'),trailing:Text((monthPaid+monthDeductions).toStringAsFixed(2),style:const TextStyle(fontWeight:FontWeight.bold)))),
+     Card(child:ListTile(leading:const Icon(Icons.payments_outlined),title:const Text('ملخص الحركات لهذا الشهر'),subtitle:Text('صرف: ${monthPaid.toStringAsFixed(2)} • خصومات: ${monthDeductions.toStringAsFixed(2)} • استحقاقات الجلسات: ${monthSessionEarnings.toStringAsFixed(2)}'),trailing:Text((monthPaid+monthDeductions+monthSessionEarnings).toStringAsFixed(2),style:const TextStyle(fontWeight:FontWeight.bold)))),
      const SizedBox(height:10),
      if(staff.isEmpty)const Padding(padding:EdgeInsets.all(24),child:Center(child:Text('أضف أعضاء الطاقم وحدّد رواتبهم الشهرية أولاً.'))),
      for(final person in staff)
@@ -544,6 +545,7 @@ class _FinancePageState extends State<FinancePage> {
        final entries=payroll.where((x)=>x.staffId==person.id&&x.month==month).toList();
        final paid=entries.where((x)=>x.type=='صرف راتب').fold<double>(0,(sum,x)=>sum+x.amount);
        final deductions=entries.where((x)=>x.type=='خصم').fold<double>(0,(sum,x)=>sum+x.amount);
+       final sessionEarnings=entries.where((x)=>x.type=='استحقاق جلسة').fold<double>(0,(sum,x)=>sum+x.amount);
        final due=(person.monthlySalary-paid-deductions).clamp(0.0,person.monthlySalary).toDouble();
        return Card(margin:const EdgeInsets.only(bottom:10),child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
         Text(person.name,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:17)),
@@ -553,6 +555,7 @@ class _FinancePageState extends State<FinancePage> {
          Text('الراتب: ${person.monthlySalary.toStringAsFixed(2)}'),
          Text('المصروف: ${paid.toStringAsFixed(2)}'),
          Text('الخصم: ${deductions.toStringAsFixed(2)}'),
+         Text('استحقاق الجلسات: ${sessionEarnings.toStringAsFixed(2)}',style:const TextStyle(color:Color(0xFF0869B9))),
          Text('المتبقي: ${due.toStringAsFixed(2)}',style:TextStyle(fontWeight:FontWeight.bold,color:due<=0?Colors.green:Colors.orange)),
         ]),
         const SizedBox(height:8),
