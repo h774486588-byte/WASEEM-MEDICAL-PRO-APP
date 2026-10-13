@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'storage.dart';
 import 'models.dart';
 class ReportsPage extends StatelessWidget {
@@ -77,6 +78,14 @@ class _SettingsPageState extends State<SettingsPage>{final name=TextEditingContr
  @override void initState(){super.initState();_load();}
  Future<void> _load()async{final s=await LocalStore.settings();name.text=s['name']??'نظام وسيم الطبي PRO';phone.text=s['phone']??'';address.text=s['address']??'';if(mounted)setState((){whatsapp=s['whatsapp']!='false';sms=s['sms']!='false';});}
  Future<void> _save()async{await LocalStore.saveSettings({'name':name.text.trim(),'phone':phone.text.trim(),'address':address.text.trim(),'whatsapp':'$whatsapp','sms':'$sms'});if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم حفظ إعدادات المركز')));}
+ Future<void> _contactSupport(bool whatsapp) async {
+   final uri=whatsapp
+     ? Uri.parse('https://wa.me/967774486588?text=${Uri.encodeComponent('مرحباً وسيم الفرح، أحتاج إلى دعم فني لنظام وسيم الطبي PRO.')}') 
+     : Uri(scheme:'tel',path:'774486588');
+   if(!await launchUrl(uri,mode:LaunchMode.externalApplication) && mounted){
+     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تعذر فتح تطبيق التواصل على هذا الجهاز.')));
+   }
+ }
  Future<void> _forgetTrustedDevice() async {
    final prefs=await SharedPreferences.getInstance();
    await prefs.remove('waseem_trusted_device');
@@ -106,7 +115,7 @@ class _SettingsPageState extends State<SettingsPage>{final name=TextEditingContr
    } catch(e) { if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('فشلت الاستعادة: $e'))); }
    finally { controller.dispose(); }
  }
- @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:const Text('إعدادات المركز')),body:ListView(padding:const EdgeInsets.all(16),children:[TextField(controller:name,decoration:const InputDecoration(labelText:'اسم المركز',prefixIcon:Icon(Icons.business))),const SizedBox(height:12),TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'رقم التواصل',prefixIcon:Icon(Icons.phone))),const SizedBox(height:12),TextField(controller:address,decoration:const InputDecoration(labelText:'العنوان',prefixIcon:Icon(Icons.location_on))),const SizedBox(height:8),SwitchListTile(title:const Text('تفعيل قناة WhatsApp'),value:whatsapp,onChanged:(v)=>setState(()=>whatsapp=v)),SwitchListTile(title:const Text('تفعيل قناة SMS'),value:sms,onChanged:(v)=>setState(()=>sms=v)),const SizedBox(height:12),FilledButton.icon(onPressed:_save,icon:const Icon(Icons.save),label:const Text('حفظ الإعدادات')),const SizedBox(height:10),OutlinedButton.icon(onPressed:_exportBackup,icon:const Icon(Icons.backup_outlined),label:const Text('تصدير نسخة احتياطية')),const SizedBox(height:8),OutlinedButton.icon(onPressed:_importBackup,icon:const Icon(Icons.restore_rounded),label:const Text('استعادة نسخة احتياطية')),const SizedBox(height:20),const Card(child:Padding(padding:EdgeInsets.all(14),child:Text('تفعيل القناة يجهز النظام للتكامل، أما الإرسال الآلي الحقيقي فيحتاج بيانات مزود WhatsApp Business أو SMS Gateway.'))),const SizedBox(height:10),OutlinedButton.icon(onPressed:_forgetTrustedDevice,icon:const Icon(Icons.phonelink_lock_outlined),label:const Text('إلغاء تذكر هذا الجهاز'))])));
+ @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:const Text('إعدادات المركز')),body:ListView(padding:const EdgeInsets.all(16),children:[TextField(controller:name,decoration:const InputDecoration(labelText:'اسم المركز',prefixIcon:Icon(Icons.business))),const SizedBox(height:12),TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'رقم التواصل',prefixIcon:Icon(Icons.phone))),const SizedBox(height:12),TextField(controller:address,decoration:const InputDecoration(labelText:'العنوان',prefixIcon:Icon(Icons.location_on))),const SizedBox(height:8),SwitchListTile(title:const Text('تفعيل قناة WhatsApp'),value:whatsapp,onChanged:(v)=>setState(()=>whatsapp=v)),SwitchListTile(title:const Text('تفعيل قناة SMS'),value:sms,onChanged:(v)=>setState(()=>sms=v)),const SizedBox(height:12),FilledButton.icon(onPressed:_save,icon:const Icon(Icons.save),label:const Text('حفظ الإعدادات')),const SizedBox(height:10),OutlinedButton.icon(onPressed:_exportBackup,icon:const Icon(Icons.backup_outlined),label:const Text('تصدير نسخة احتياطية')),const SizedBox(height:8),OutlinedButton.icon(onPressed:_importBackup,icon:const Icon(Icons.restore_rounded),label:const Text('استعادة نسخة احتياطية')),const SizedBox(height:20),const Card(child:Padding(padding:EdgeInsets.all(14),child:Text('تفعيل القناة يجهز النظام للتكامل، أما الإرسال الآلي الحقيقي فيحتاج بيانات مزود WhatsApp Business أو SMS Gateway.'))),const SizedBox(height:10),const Text('الدعم الفني — وسيم الفرح',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),const SizedBox(height:8),OutlinedButton.icon(onPressed:()=>_contactSupport(true),icon:const Icon(Icons.chat,color:Colors.green),label:const Text('التواصل عبر واتساب: 774486588')),OutlinedButton.icon(onPressed:()=>_contactSupport(false),icon:const Icon(Icons.phone),label:const Text('الاتصال بالمطور: 774486588')),const SizedBox(height:10),OutlinedButton.icon(onPressed:_forgetTrustedDevice,icon:const Icon(Icons.phonelink_lock_outlined),label:const Text('إلغاء تذكر هذا الجهاز'))])));
 }
 
 
