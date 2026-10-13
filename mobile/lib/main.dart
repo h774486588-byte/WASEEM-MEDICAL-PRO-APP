@@ -77,6 +77,9 @@ class _DashboardState extends State<Dashboard>{
       InventoryPage(key:ValueKey('v'+version.toString())),
       StaffPage(key:ValueKey('t'+version.toString())),
       FinancePage(key:ValueKey('f'+version.toString())),
+      const ServiceDirectoryPage(),
+      const PackageDirectoryPage(),
+      StaffDirectoryPage(key:ValueKey('staffDirectory'+version.toString())),
       BackupRestorePage(key:ValueKey('backup'+version.toString()))
     ];
     return Directionality(textDirection:TextDirection.rtl,child:Scaffold(
