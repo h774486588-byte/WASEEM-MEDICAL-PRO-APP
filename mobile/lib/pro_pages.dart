@@ -289,7 +289,7 @@ class _StaffPageState extends State<StaffPage> {
     final list=await LocalStore.staff();
     final index=list.indexWhere((x)=>x.id==person.id);
     if(index>=0){
-     list[index]=StaffMember(id:person.id,name:name.text.trim(),role:role.text.trim(),phone:phone.text.trim(),monthlySalary:value);
+     list[index]=StaffMember(id:person.id,name:name.text.trim(),role:role.text.trim(),phone:phone.text.trim(),monthlySalary:value,commissionPercent:person.commissionPercent,sessionFee:person.sessionFee);
      await LocalStore.saveStaff(list);
      if(mounted){setState((){});ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم تحديث بيانات الموظف.')));}
     }
