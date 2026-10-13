@@ -23,8 +23,8 @@ class _StaffDirectoryPageState extends State<StaffDirectoryPage>{
         TextField(controller:sessionFee,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'أجر الجلسة الثابت (اختياري)'),),
       ])),
       actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('إلغاء')),FilledButton(onPressed:(){
-        final n=name.text.trim(),r=role.text.trim(),s=double.tryParse(salary.text.trim())??-1;
-        if(n.isEmpty||r.isEmpty||s<0){ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content:Text('أدخل الاسم والمسمى وراتبًا صحيحًا')));return;}
+        final n=name.text.trim(),r=role.text.trim(),s=double.tryParse(salary.text.trim().isEmpty?'0':salary.text.trim())??-1,cp=double.tryParse(commission.text.trim().isEmpty?'0':commission.text.trim())??-1,sf=double.tryParse(sessionFee.text.trim().isEmpty?'0':sessionFee.text.trim())??-1;
+        if(n.isEmpty||r.isEmpty||s<0||cp<0||cp>100||sf<0){ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content:Text('تحقق من الاسم والمسمى والراتب والنسبة (0–100) وأجر الجلسة')));return;}
         Navigator.pop(ctx,StaffMember(id:old?.id??DateTime.now().microsecondsSinceEpoch.toString(),name:n,role:r,phone:phone.text.trim(),monthlySalary:s,commissionPercent:cp,sessionFee:sf));
       },child:const Text('حفظ'))]
     ));
