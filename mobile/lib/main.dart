@@ -8,6 +8,7 @@ import 'pro_pages.dart';
 import 'patient_documents.dart';
 import 'patient_operations_statement.dart';
 import 'setup_catalogs.dart';
+import 'staff_directory.dart';
 import 'examination_page.dart';
 
 void main()=>runApp(const WaseemMedicalPro());
@@ -59,7 +60,7 @@ class _LoginPageState extends State<LoginPage>{
 class Dashboard extends StatefulWidget{const Dashboard({super.key});@override State<Dashboard> createState()=>_DashboardState();}
 class _DashboardState extends State<Dashboard>{
   int index=0,version=0;
-  final names=['الرئيسية','المرضى','المواعيد','الباقات','الفواتير','الإشعارات','التقارير','الإعدادات','المخزون','الطاقم الطبي','المالية','دليل الخدمات والأقسام','دليل الباقات والجلسات'];
+  final names=['الرئيسية','المرضى','المواعيد','الباقات','الفواتير','الإشعارات','التقارير','الإعدادات','المخزون','الطاقم الطبي','المالية','دليل الخدمات والأقسام','دليل الباقات والجلسات','دليل الكادر الوظيفي'];
   void refresh()=>setState(()=>version++);
   void go(int i)=>setState(()=>index=i);
   @override Widget build(BuildContext context){
@@ -92,7 +93,7 @@ class _DashboardState extends State<Dashboard>{
         for (final entry in <({int page, String label, IconData icon})>[
           (page:0,label:'الرئيسية',icon:Icons.home_rounded),
           (page:11,label:'دليل الخدمات والأقسام',icon:Icons.medical_services_rounded),
-          (page:9,label:'دليل الكادر الوظيفي',icon:Icons.groups_rounded),
+          (page:13,label:'دليل الكادر الوظيفي',icon:Icons.groups_rounded),
           (page:12,label:'دليل الباقات والجلسات',icon:Icons.layers_rounded),
           (page:4,label:'الفواتير',icon:Icons.receipt_long_rounded),
           (page:5,label:'مركز الرسائل والإشعارات',icon:Icons.mark_email_unread_rounded),
