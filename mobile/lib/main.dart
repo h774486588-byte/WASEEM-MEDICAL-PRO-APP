@@ -715,16 +715,32 @@ class PackageForm extends StatefulWidget{
 class _PackageFormState extends State<PackageForm>{
   late String pid;
   String therapist='';
+  String? selectedCatalogId;
+  List<Map<String,dynamic>> catalog=[];
   final name=TextEditingController(),price=TextEditingController(),paid=TextEditingController(),sessions=TextEditingController();
-  @override void initState(){super.initState();pid=widget.patients.first.id;}
+  @override void initState(){super.initState();pid=widget.patients.first.id;_loadCatalog();}
+  Future<void> _loadCatalog() async {
+    final prefs=await SharedPreferences.getInstance();
+    final raw=prefs.getStringList('package_catalog_v1')??[];
+    final loaded=<Map<String,dynamic>>[];
+    for(final entry in raw){try{final value=Map<String,dynamic>.from(jsonDecode(entry) as Map);if(value['active'] as bool? ?? true)loaded.add(value);}catch(_){}}
+    if(mounted)setState(()=>catalog=loaded);
+  }
+  void _applyCatalog(Map<String,dynamic> item){
+    setState((){selectedCatalogId=item['id']?.toString();name.text=(item['name']??'').toString();price.text=(item['price']??'').toString();sessions.text=(item['sessions']??'').toString();});
+  }
   @override Widget build(BuildContext c)=>Directionality(textDirection:TextDirection.rtl,child:Scaffold(appBar:AppBar(title:const Text('باقة جديدة')),body:ListView(padding:const EdgeInsets.all(16),children:[
     DropdownButtonFormField<String>(initialValue:pid,decoration:const InputDecoration(labelText:'المريض'),items:widget.patients.map((p)=>DropdownMenuItem(value:p.id,child:Text(p.name))).toList(),onChanged:(v)=>setState(()=>pid=v??pid)),
     const SizedBox(height:10),
     DropdownButtonFormField<String>(initialValue:therapist,decoration:const InputDecoration(labelText:'الممرض / الأخصائي المسؤول عن الباقة'),items:[const DropdownMenuItem(value:'',child:Text('بدون إسناد')), ...widget.staff.map((x)=>DropdownMenuItem(value:x.name,child:Text(x.name+' • '+x.role)))],onChanged:(v)=>setState(()=>therapist=v??'')),
+    if(catalog.isNotEmpty) ...[
+      const SizedBox(height:10),
+      DropdownButtonFormField<String>(initialValue:selectedCatalogId,decoration:const InputDecoration(labelText:'اختيار باقة من دليل الباقات (اختياري)'),items:catalog.map((item)=>DropdownMenuItem<String>(value:item['id'].toString(),child:Text('${item['name']} • ${item['sessions']} جلسة • ${item['price']}'))).toList(),onChanged:(v){final found=catalog.where((x)=>x['id'].toString()==v).firstOrNull;if(found!=null)_applyCatalog(found);}),
+    ],
     const SizedBox(height:10),TextField(controller:name,decoration:const InputDecoration(labelText:'اسم الباقة')),
-    const SizedBox(height:10),TextField(controller:price,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'السعر')),
-    const SizedBox(height:10),TextField(controller:paid,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'المدفوع')),
-    const SizedBox(height:10),TextField(controller:sessions,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'عدد الجلسات')),
+    const SizedBox(height:10),TextField(controller:price,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'السعر')),
+    const SizedBox(height:10),TextField(controller:paid,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'المدفوع')),
+    const SizedBox(height:10),TextField(controller:sessions,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'عدد الجلسات'))
     const SizedBox(height:20),SizedBox(height:50,child:FilledButton.icon(onPressed:(){final s=int.tryParse(sessions.text)??0;if(name.text.trim().isEmpty||s<=0){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أدخل اسم الباقة وعدد جلسات صحيح')));return;}final p=double.tryParse(price.text)??0,paidValue=double.tryParse(paid.text)??0;if(p<0||paidValue<0||paidValue>p){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تحقق من السعر والمدفوع')));return;}Navigator.pop(c,PackageRecord(id:idNow(),patientId:pid,name:name.text.trim(),price:p,paid:paidValue,sessions:s,remaining:s,startDate:dateOnly(DateTime.now()),endDate:dateOnly(DateTime.now().add(const Duration(days:30))),therapist:therapist));},icon:const Icon(Icons.save),label:const Text('حفظ الباقة')))
   ])));
 }
