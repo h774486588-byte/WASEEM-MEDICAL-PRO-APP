@@ -63,6 +63,8 @@ class LocalStore {
       'expenses':(await expenses()).map((e)=>e.toJson()).toList(),
       'attendance':(await attendance()).map((e)=>e.toJson()).toList(),
       'payrollEntries':(await payrollEntries()).map((e)=>e.toJson()).toList(),
+      'serviceDirectoryRaw':(await SharedPreferences.getInstance()).getStringList('service_directory_v1')??[],
+      'packageCatalogRaw':(await SharedPreferences.getInstance()).getStringList('package_catalog_v1')??[],
       'settings':await settings()
     };
   }
@@ -83,6 +85,9 @@ class LocalStore {
     if(x['attendance'] is List) await saveAttendance((x['attendance'] as List).map((e)=>AttendanceRecord.fromJson(Map<String,dynamic>.from(e))).toList());
     if(x['payrollEntries'] is List) await savePayrollEntries((x['payrollEntries'] as List).map((e)=>PayrollEntry.fromJson(Map<String,dynamic>.from(e))).toList());
     if(x['settings'] is Map) await saveSettings(Map<String,String>.from(x['settings']));
+    final prefs=await SharedPreferences.getInstance();
+    if(x['serviceDirectoryRaw'] is List) await prefs.setStringList('service_directory_v1',(x['serviceDirectoryRaw'] as List).map((e)=>e.toString()).toList());
+    if(x['packageCatalogRaw'] is List) await prefs.setStringList('package_catalog_v1',(x['packageCatalogRaw'] as List).map((e)=>e.toString()).toList());
   }
   static Future<Map<String,String>> settings() async { final p=await SharedPreferences.getInstance(); return {'name':p.getString('clinic_name')??'نظام وسيم الطبي PRO','phone':p.getString('clinic_phone')??'','address':p.getString('clinic_address')??'','whatsapp':p.getString('clinic_whatsapp')??'false','sms':p.getString('clinic_sms')??'false'}; }
   static Future<void> saveSettings(Map<String,String> x) async { final p=await SharedPreferences.getInstance(); await p.setString('clinic_name',x['name']??''); await p.setString('clinic_phone',x['phone']??''); await p.setString('clinic_address',x['address']??''); await p.setString('clinic_whatsapp',x['whatsapp']??'false'); await p.setString('clinic_sms',x['sms']??'false'); }
