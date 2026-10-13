@@ -7,6 +7,7 @@ import 'storage.dart';
 import 'pro_pages.dart';
 import 'patient_documents.dart';
 import 'patient_operations_statement.dart';
+import 'setup_catalogs.dart';
 import 'examination_page.dart';
 
 void main()=>runApp(const WaseemMedicalPro());
@@ -58,7 +59,7 @@ class _LoginPageState extends State<LoginPage>{
 class Dashboard extends StatefulWidget{const Dashboard({super.key});@override State<Dashboard> createState()=>_DashboardState();}
 class _DashboardState extends State<Dashboard>{
   int index=0,version=0;
-  final names=['الرئيسية','المرضى','المواعيد','الباقات','الفواتير','الإشعارات','التقارير','الإعدادات','المخزون','الطاقم الطبي','المالية'];
+  final names=['الرئيسية','المرضى','المواعيد','الباقات','الفواتير','الإشعارات','التقارير','الإعدادات','المخزون','الطاقم الطبي','المالية','دليل الخدمات والأقسام','دليل الباقات والجلسات'];
   void refresh()=>setState(()=>version++);
   void go(int i)=>setState(()=>index=i);
   @override Widget build(BuildContext context){
@@ -87,20 +88,25 @@ class _DashboardState extends State<Dashboard>{
           Row(children:[Container(width:54,height:54,decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(16)),child:const Icon(Icons.favorite_border_rounded,size:34,color:Color(0xFF0869B9))),const SizedBox(width:12),const Expanded(child:Text('مركز وسيم الطبي\nWASEEM MEDICAL CENTER',style:TextStyle(color:Colors.white,fontSize:17,fontWeight:FontWeight.bold)))]),
           const SizedBox(height:8),const Text('نظام إدارة المركز الطبي PRO',style:TextStyle(color:Colors.white70))
         ])),
-        for (int i = 0; i < names.length; i++)
+        // القائمة الجانبية مخصصة للتعريف والإعداد؛ المرضى والمواعيد يبقيان في الوصول السريع.
+        for (final entry in <({int page, String label, IconData icon})>[
+          (page:0,label:'الرئيسية',icon:Icons.home_rounded),
+          (page:11,label:'دليل الخدمات والأقسام',icon:Icons.medical_services_rounded),
+          (page:9,label:'دليل الكادر الوظيفي',icon:Icons.groups_rounded),
+          (page:12,label:'دليل الباقات والجلسات',icon:Icons.layers_rounded),
+          (page:4,label:'الفواتير',icon:Icons.receipt_long_rounded),
+          (page:5,label:'مركز الرسائل والإشعارات',icon:Icons.mark_email_unread_rounded),
+          (page:6,label:'التقارير',icon:Icons.bar_chart_rounded),
+          (page:7,label:'بيانات المركز والإعدادات',icon:Icons.settings_rounded),
+          (page:8,label:'المخزون',icon:Icons.inventory_2_rounded),
+          (page:10,label:'المالية',icon:Icons.account_balance_wallet_rounded),
+        ])
           ListTile(
-            selected: index == i,
+            selected: index == entry.page,
             selectedColor: const Color(0xFF0869B9),
-            leading: Icon([
-              Icons.home_rounded, Icons.people_alt_rounded,
-              Icons.calendar_month_rounded, Icons.layers_rounded,
-              Icons.receipt_long_rounded, Icons.notifications_rounded,
-              Icons.bar_chart_rounded, Icons.settings_rounded,
-              Icons.inventory_2_rounded, Icons.groups_rounded,
-              Icons.account_balance_wallet_rounded,
-            ][i]),
-            title: Text(names[i], style: const TextStyle(fontWeight: FontWeight.w600)),
-            onTap: () { go(i); Navigator.pop(context); },
+            leading: Icon(entry.icon),
+            title: Text(entry.label, style: const TextStyle(fontWeight: FontWeight.w600)),
+            onTap: () { go(entry.page); Navigator.pop(context); },
           ),
       ])),
       body:pages[index],
