@@ -10,6 +10,7 @@ import 'patient_operations_statement.dart';
 import 'setup_catalogs.dart';
 import 'staff_directory.dart';
 import 'examination_page.dart';
+import 'backup_restore_page.dart';
 
 void main()=>runApp(const WaseemMedicalPro());
 
@@ -60,7 +61,7 @@ class _LoginPageState extends State<LoginPage>{
 class Dashboard extends StatefulWidget{const Dashboard({super.key});@override State<Dashboard> createState()=>_DashboardState();}
 class _DashboardState extends State<Dashboard>{
   int index=0,version=0;
-  final names=['الرئيسية','المرضى','المواعيد','الباقات','الفواتير','الإشعارات','التقارير','الإعدادات','المخزون','الطاقم الطبي','المالية','دليل الخدمات والأقسام','دليل الباقات والجلسات','دليل الكادر الوظيفي'];
+  final names=['الرئيسية','المرضى','المواعيد','الباقات','الفواتير','الإشعارات','التقارير','الإعدادات','المخزون','الطاقم الطبي','المالية','دليل الخدمات والأقسام','دليل الباقات والجلسات','دليل الكادر الوظيفي','النسخ الاحتياطي والاستعادة'];
   void refresh()=>setState(()=>version++);
   void go(int i)=>setState(()=>index=i);
   @override Widget build(BuildContext context){
@@ -75,7 +76,8 @@ class _DashboardState extends State<Dashboard>{
       SettingsPage(key:ValueKey('s'+version.toString())),
       InventoryPage(key:ValueKey('v'+version.toString())),
       StaffPage(key:ValueKey('t'+version.toString())),
-      FinancePage(key:ValueKey('f'+version.toString()))
+      FinancePage(key:ValueKey('f'+version.toString())),
+      BackupRestorePage(key:ValueKey('backup'+version.toString()))
     ];
     return Directionality(textDirection:TextDirection.rtl,child:Scaffold(
       backgroundColor:const Color(0xFFF5F8FC),
@@ -101,6 +103,7 @@ class _DashboardState extends State<Dashboard>{
           (page:7,label:'بيانات المركز والإعدادات',icon:Icons.settings_rounded),
           (page:8,label:'المخزون',icon:Icons.inventory_2_rounded),
           (page:10,label:'المالية',icon:Icons.account_balance_wallet_rounded),
+          (page:14,label:'النسخ الاحتياطي والاستعادة',icon:Icons.backup_rounded),
         ])
           ListTile(
             selected: index == entry.page,
