@@ -11,7 +11,7 @@ class _StaffDirectoryPageState extends State<StaffDirectoryPage>{
   @override void initState(){super.initState();load();}
   Future<void> load()async{final x=await LocalStore.staff();if(!mounted)return;setState(()=>staff=x..sort((a,b)=>a.name.compareTo(b.name)));setState(()=>loading=false);}
   Future<void> edit([StaffMember? old])async{
-    final name=TextEditingController(text:old?.name??''),role=TextEditingController(text:old?.role??''),phone=TextEditingController(text:old?.phone??''),salary=TextEditingController(text:old==null?'':old.monthlySalary.toString());
+    final name=TextEditingController(text:old?.name??''),role=TextEditingController(text:old?.role??''),phone=TextEditingController(text:old?.phone??''),salary=TextEditingController(text:old==null?'':old.monthlySalary.toString()),commission=TextEditingController(text:old==null?'':old.commissionPercent.toString()),sessionFee=TextEditingController(text:old==null?'':old.sessionFee.toString());
     final result=await showDialog<StaffMember>(context:context,builder:(ctx)=>AlertDialog(
       title:Text(old==null?'إضافة موظف إلى الدليل':'تعديل بيانات الموظف'),
       content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
@@ -19,11 +19,13 @@ class _StaffDirectoryPageState extends State<StaffDirectoryPage>{
         TextField(controller:role,decoration:const InputDecoration(labelText:'المسمى الوظيفي *')),
         TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'رقم الهاتف')),
         TextField(controller:salary,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'الراتب الشهري الأساسي')),
+        TextField(controller:commission,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'نسبة العمولة من الخدمة (%)')),
+        TextField(controller:sessionFee,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'أجر الجلسة الثابت (اختياري)'),),
       ])),
       actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('إلغاء')),FilledButton(onPressed:(){
         final n=name.text.trim(),r=role.text.trim(),s=double.tryParse(salary.text.trim())??-1;
         if(n.isEmpty||r.isEmpty||s<0){ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content:Text('أدخل الاسم والمسمى وراتبًا صحيحًا')));return;}
-        Navigator.pop(ctx,StaffMember(id:old?.id??DateTime.now().microsecondsSinceEpoch.toString(),name:n,role:r,phone:phone.text.trim(),monthlySalary:s));
+        Navigator.pop(ctx,StaffMember(id:old?.id??DateTime.now().microsecondsSinceEpoch.toString(),name:n,role:r,phone:phone.text.trim(),monthlySalary:s,commissionPercent:cp,sessionFee:sf));
       },child:const Text('حفظ'))]
     ));
     if(result==null)return;
@@ -45,7 +47,7 @@ class _StaffDirectoryPageState extends State<StaffDirectoryPage>{
       Expanded(child:staff.isEmpty?const Center(child:Text('لا توجد سجلات في الدليل بعد.')):ListView.builder(padding:const EdgeInsets.fromLTRB(12,0,12,80),itemCount:staff.length,itemBuilder:(c,i){final x=staff[i];return Card(child:ListTile(
         leading:const CircleAvatar(child:Icon(Icons.badge_outlined)),
         title:Text(x.name,style:const TextStyle(fontWeight:FontWeight.bold)),
-        subtitle:Text('${x.role} • ${x.phone.isEmpty?'لا يوجد هاتف':x.phone}\nالراتب الأساسي: ${x.monthlySalary.toStringAsFixed(2)}'),
+        subtitle:Text('${x.role} • ${x.phone.isEmpty?'لا يوجد هاتف':x.phone}\nالراتب الأساسي: ${x.monthlySalary.toStringAsFixed(2)} • العمولة: ${x.commissionPercent}% • أجر الجلسة: ${x.sessionFee.toStringAsFixed(2)}'),
         isThreeLine:true,
         trailing:PopupMenuButton<String>(onSelected:(v){if(v=='edit')edit(x);if(v=='delete')remove(x);},itemBuilder:(_)=>[const PopupMenuItem(value:'edit',child:Text('تعديل البيانات')),const PopupMenuItem(value:'delete',child:Text('حذف السجل'))]),
       ));}))
