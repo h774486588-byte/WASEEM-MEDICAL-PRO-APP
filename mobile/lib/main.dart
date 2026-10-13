@@ -592,6 +592,34 @@ class _PackagesPageState extends State<PackagesPage>{
     final r=await Navigator.push<PackageRecord>(context,MaterialPageRoute(builder:(_)=>PackageForm(patients:ps,staff:staff)));
     if(r==null)return;
     final l=await LocalStore.packages(); l.add(r); await LocalStore.savePackages(l);
+    // Link each new treatment package to the accounting ledger exactly once.
+    final invoiceList=await LocalStore.invoices();
+    final packageInvoice=Invoice(
+      id:'package-${r.id}',
+      patientId:r.patientId,
+      number:'PKG-${r.id}',
+      total:r.price,
+      paid:r.paid,
+      date:dateOnly(DateTime.now()),
+      status:r.paid>=r.price?'مدفوعة':(r.paid>0?'جزئية':'غير مدفوعة'),
+    );
+    if(!invoiceList.any((x)=>x.id==packageInvoice.id)){
+      invoiceList.add(packageInvoice);
+      await LocalStore.saveInvoices(invoiceList);
+      if(r.paid>0){
+        final paymentList=await LocalStore.payments();
+        paymentList.add(PaymentRecord(
+          id:'package-payment-${r.id}',
+          invoiceId:packageInvoice.id,
+          patientId:r.patientId,
+          amount:r.paid,
+          method:'نقدي',
+          date:dateOnly(DateTime.now()),
+          notes:'دفعة أولية عند تسجيل الباقة ${r.name}',
+        ));
+        await LocalStore.savePayments(paymentList);
+      }
+    }
     final patient=ps.where((p)=>p.id==r.patientId).firstOrNull;
     if(patient!=null){
       final message='مرحباً '+patient.name+'، تم تسجيل باقة '+r.name+' لك. عدد الجلسات: '+r.sessions.toString()+'. السعر: '+r.price.toStringAsFixed(2)+'. المدفوع: '+r.paid.toStringAsFixed(2)+'. الجلسات المتبقية: '+r.remaining.toString()+'.';
